@@ -75,15 +75,17 @@ class Interval:
     def overlap(self, other, payload_producer_fn=intrvl1_payload):
         if overlaps()(self, other):
             payload = payload_producer_fn(self, other)
-            if during()(self, other) or equal()(self, other):
+            if (during()(self, other) or equal()(self, other)
+                    or starts()(self, other) or finishes()(self, other)):
                 return Interval(self.start, self.end, payload)
             if overlaps_before()(self, other):
                 return Interval(other.start, self.end, payload)
             if overlaps_after()(self, other):
                 return Interval(self.start, other.end, payload)
-            if during()(other, self):
+            if (during()(other, self) or starts()(other, self)
+                    or finishes()(other, self)):
                 return Interval(other.start, other.end, payload)
-            error_string = "Reached unreachable point in minus with {} and {}"
+            error_string = "Reached unreachable point in overlap with {} and {}"
             error_string = error_string.format(self, other)
             assert False, error_string
         else:
@@ -130,7 +132,7 @@ class IntervalList:
     '''
     Return an ordered list of the Intervals.
     '''
-    def get_temporal_ranges(self):
+    def get_intervals(self):
         return self.intrvls
 
     ''' Get total time. '''
