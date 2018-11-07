@@ -1,6 +1,6 @@
 from constraint import *
 
-'''
+"""
 Spatial predicates on Temporal Ranges. Assumes that the payload has the
 following structure:
 {
@@ -128,7 +128,7 @@ constructing regions:
     center(region=full_frame()) - center of a region (returns a region 1/4 the
         size of the full region, proportional to the full region, and in the
         center of the full region)
-'''
+"""
 
 '''Logical predicates'''
 def and_pred_spatial(pred1, pred2):

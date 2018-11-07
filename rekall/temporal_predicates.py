@@ -1,6 +1,6 @@
 from rekall.common import *
 
-'''
+"""
 Binary predicates on Temporal Ranges.
 
 Before and After:
@@ -39,7 +39,7 @@ Equal:
 Overlaps:
     Sugar for a more colloquial version of overlapping. Includes Starts/Inv,
     Finishes/Inv, During/Inv, Equal, and OverlapsBefore/After.
-'''
+"""
 def true_pred():
     return lambda intrvl1, intrvl2: True;
 

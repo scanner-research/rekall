@@ -1,29 +1,16 @@
 import itertools
 from rekall.common import *
+from rekall.helpers import *
 from rekall.temporal_predicates import *
 
-'''
-A helper function that, given two objects, returns the payload field of the first
-one.
-'''
-def intrvl1_payload(intrvl1, intrvl2):
-    return intrvl1.payload
-
-'''
-A helper function that, given two objects, returns the payload field of the first
-one.
-'''
-def intrvl2_payload(intrvl1, intrvl2):
-    return intrvl2.payload
-
-'''
-A Interval has a start time, end time, and payload.
-'''
 class Interval:
-    '''
-    Construct an temporal range from a start time, end time, and integer payload.
-    '''
+    """
+    A Interval has a start time, end time, and payload.
+    """
     def __init__(self, start, end, payload):
+        """
+        Construct an temporal range from a start time, end time, and integer payload.
+        """
         self.start = start
         self.end = end
         self.payload = payload
@@ -38,17 +25,17 @@ class Interval:
     def copy(self):
         return Interval(self.start, self.end, self.payload)
 
-    '''
-    Computes the interval difference between self and other and returns results
-    in an array.
-    If there is no overlap between self and other, [self.copy()] is returned.
-    If self is completely contained by other, [] is returned.
-    Otherwise, returns a list l of intervals such that the members of l
-    maximally cover self without overlapping other.
-    The payloads of the members of l are determined by
-    payload_producer_fn(self, other).
-    '''
     def minus(self, other, payload_producer_fn=intrvl1_payload):
+        """
+        Computes the interval difference between self and other and returns results
+        in an array.
+        If there is no overlap between self and other, [self.copy()] is returned.
+        If self is completely contained by other, [] is returned.
+        Otherwise, returns a list l of intervals such that the members of l
+        maximally cover self without overlapping other.
+        The payloads of the members of l are determined by
+        payload_producer_fn(self, other).
+        """
         if overlaps()(self, other):
             payload = payload_producer_fn(self, other)
             if during()(self, other) or equal()(self, other):
@@ -66,13 +53,13 @@ class Interval:
         else:
             return [self.copy()]
 
-    '''
-    Computes the interval overlap between self and other.
-    If there is no overlap between self and other, returns None.
-    Otherwise, it returns an interval that maximally overlaps both self and
-    other, with payload produced by lable_producer_fn(self, other).
-    '''
     def overlap(self, other, payload_producer_fn=intrvl1_payload):
+        """
+        Computes the interval overlap between self and other.
+        If there is no overlap between self and other, returns None.
+        Otherwise, it returns an interval that maximally overlaps both self and
+        other, with payload produced by lable_producer_fn(self, other).
+        """
         if overlaps()(self, other):
             payload = payload_producer_fn(self, other)
             if (during()(self, other) or equal()(self, other)
@@ -91,17 +78,14 @@ class Interval:
         else:
             return None
 
-    '''
-    Computes the minimum interval that contains both self and other.
-    '''
     def merge(self, other, payload_producer_fn=intrvl1_payload):
+        """
+        Computes the minimum interval that contains both self and other.
+        """
         payload = payload_producer_fn(self, other)
         return Interval(min(self.start, other.start),
                 max(self.end, other.end), payload)
 
-    '''
-    Getters.
-    '''
     def get_start(self):
         return self.start
     def get_end(self):
@@ -110,11 +94,11 @@ class Interval:
         return self.payload
 
 
-'''
-A IntervalList is a wrapper around a list of Temporal Ranges that contains
-a number of useful helper functions.
-'''
 class IntervalList:
+    """
+    A IntervalList is a wrapper around a list of Temporal Ranges that contains
+    a number of useful helper functions.
+    """
     def __init__(self, intrvls):
         self.intrvls = sorted([intrvl if isinstance(intrvl, Interval)
                 else Interval(intrvl[0], intrvl[1], intrvl[2]) for intrvl in intrvls],
@@ -123,38 +107,32 @@ class IntervalList:
     def __repr__(self):
         return str(self.intrvls)
     
-    '''
-    Gets number of Temporal Ranges stored by this IntervalList.
-    '''
+    # ============== GETTERS ==============
     def size(self):
+        """ Gets number of Temporal Ranges stored by this IntervalList.
+        """
         return len(self.intrvls)
 
-    '''
-    Return an ordered list of the Intervals.
-    '''
     def get_intervals(self):
+        """ Return an ordered list of the Intervals.
+        """
         return self.intrvls
 
-    ''' Get total time. '''
     def get_total_time(self):
+        """ Get total time. """
         total = 0
         for intrvl in self.intrvls:
             total += intrvl.end - intrvl.start
         return total
 
-    '''
-    Combine the temporal ranges in self with the temporal ranges in other.
-    '''
-    def set_union(self, other):
-        return IntervalList(self.intrvls + other.intrvls)
-
-    '''
-    Recursively merge all overlapping or touching temporal ranges.
-
-    If require_same_payload is True, then only merge ranges that have the same
-    payload.
-    '''
+    # ============== FUNCTIONS THAT MODIFY SELF ==============
     def coalesce(self, require_same_payload=False):
+        """
+        Recursively merge all overlapping or touching temporal ranges.
+
+        If require_same_payload is True, then only merge ranges that have the same
+        payload.
+        """
         if len(self.intrvls) == 0:
             return self
         new_intrvls = []
@@ -182,27 +160,27 @@ class IntervalList:
 
         return IntervalList(new_intrvls)
 
-    '''
-    Expand every temporal range. An temporal range [start, end, i] will turn into
-    [start - window, end + window, i].
-    '''
     def dilate(self, window):
+        """
+        Expand every temporal range. An temporal range [start, end, i] will turn into
+        [start - window, end + window, i].
+        """
         return IntervalList(
             [Interval(intrvl.start - window, intrvl.end + window, intrvl.payload) 
                 for intrvl in self.intrvls])
 
-    '''
-    Filter every temporal range by fn. fn takes in an Interval and returns true or
-    false.
-    '''
     def filter(self, fn):
+        """
+        Filter every temporal range by fn. fn takes in an Interval and returns true or
+        false.
+        """
         return IntervalList([intrvl.copy() for intrvl in self.intrvls if fn(intrvl)])
 
-    '''
-    Filter temporal ranges so that only temporal ranges of length between min_length and
-    max_length are left.
-    '''
     def filter_length(self, min_length=0, max_length=INFTY):
+        """
+        Filter temporal ranges so that only temporal ranges of length between min_length and
+        max_length are left.
+        """
         def filter_fn(intrvl):
             length = intrvl.end - intrvl.start
             return length >= min_length and (max_length == INFTY
@@ -210,12 +188,18 @@ class IntervalList:
 
         return self.filter(filter_fn)
 
-    '''
-    Filter the ranges in self against the ranges in other, only keeping the
-    ranges in self that satisfy predicate with at least one other range in
-    other.
-    '''
+    def set_union(self, other):
+        """ Combine the temporal ranges in self with the temporal ranges in other.
+        """
+        return IntervalList(self.intrvls + other.intrvls)
+
+    # ============= FUNCTIONS THAT JOIN WITH ANOTHER INTERVAL LIST =============
     def filter_against(self, other, predicate=true_pred()):
+        """
+        Filter the ranges in self against the ranges in other, only keeping the
+        ranges in self that satisfy predicate with at least one other range in
+        other.
+        """
         def filter_fn(intrvl):
             for intrvlother in other.intrvls:
                 if predicate(intrvl, intrvlother):
@@ -224,46 +208,46 @@ class IntervalList:
 
         return self.filter(filter_fn)
 
-    '''
-    Calculate the difference between the temporal ranges in self and the temporal ranges
-    in other.
-
-    The difference between two intervals can produce up to two new intervals.
-    If recursive_diff is True, difference operations will recursively be
-    applied to the resulting intervals.
-    If recursive_diff is False, the results of each difference operation
-    between every valid pair of intervals in self and other will be emitted.
-
-    For example, suppose the following interval is in self:
-
-    |--------------------------------------------------------|
-
-    and that the following two intervals are in other:
-
-              |--------------|     |----------------|
-    
-    If recursive_diff is True, this function will produce three intervals:
-
-    |---------|              |-----|                |--------|
-
-    If recursive_diff is False, this function will produce four intervals, some
-    of which are overlapping:
-
-    |---------|              |-------------------------------|
-    |------------------------------|                |--------|
-
-    Only computes differences for pairs that overlap and that satisfy
-    predicate.
-
-    If an interval in self overlaps no pairs in other such that the two
-    satisfy predicate, then the interval is reproduced in the output.
-
-    Labels the resulting intervals with payload_producer_fn. For recursive_diff,
-    the intervals passed in to the payload producer function are the original
-    interval and the first interval that touches the output interval.
-    '''
     def minus(self, other, recursive_diff = True, predicate = true_pred(),
             payload_producer_fn = intrvl1_payload):
+        """
+        Calculate the difference between the temporal ranges in self and the temporal ranges
+        in other.
+
+        The difference between two intervals can produce up to two new intervals.
+        If recursive_diff is True, difference operations will recursively be
+        applied to the resulting intervals.
+        If recursive_diff is False, the results of each difference operation
+        between every valid pair of intervals in self and other will be emitted.
+
+        For example, suppose the following interval is in self:
+
+        |--------------------------------------------------------|
+
+        and that the following two intervals are in other:
+
+                  |--------------|     |----------------|
+        
+        If recursive_diff is True, this function will produce three intervals:
+
+        |---------|              |-----|                |--------|
+
+        If recursive_diff is False, this function will produce four intervals, some
+        of which are overlapping:
+
+        |---------|              |-------------------------------|
+        |------------------------------|                |--------|
+
+        Only computes differences for pairs that overlap and that satisfy
+        predicate.
+
+        If an interval in self overlaps no pairs in other such that the two
+        satisfy predicate, then the interval is reproduced in the output.
+
+        Labels the resulting intervals with payload_producer_fn. For recursive_diff,
+        the intervals passed in to the payload producer function are the original
+        interval and the first interval that touches the output interval.
+        """
         if not recursive_diff:
             output = []
             for intrvl1 in self.intrvls:
@@ -350,38 +334,38 @@ class IntervalList:
             return IntervalList(output)
 
 
-    '''
-    Get the overlapping intervals between self and other.
-
-    Only processes pairs that overlap and that satisfy predicate.
-
-    Labels the resulting intervals with payload_producer_fn.
-    '''
     def overlaps(self, other, predicate = true_pred(), payload_producer_fn =
             intrvl1_payload):
+        """
+        Get the overlapping intervals between self and other.
+
+        Only processes pairs that overlap and that satisfy predicate.
+
+        Labels the resulting intervals with payload_producer_fn.
+        """
         return IntervalList([intrvl1.overlap(intrvl2, payload_producer_fn)
                 for intrvl1 in self.intrvls for intrvl2 in other.intrvls
                 if (overlaps()(intrvl1, intrvl2) and
                     predicate(intrvl1, intrvl2))])
 
-    '''
-    Merges pairs of intervals in self and other that satisfy payload_producer_fn.
-
-    Only processes pairs that satisfy predicate.
-
-    Labels the resulting intervals with payload_producer_fn.
-    '''
     def merge(self, other, predicate = true_pred(), payload_producer_fn =
             intrvl1_payload):
+        """
+        Merges pairs of intervals in self and other that satisfy payload_producer_fn.
+
+        Only processes pairs that satisfy predicate.
+
+        Labels the resulting intervals with payload_producer_fn.
+        """
         return IntervalList([intrvl1.merge(intrvl2, payload_producer_fn)
                 for intrvl1 in self.intrvls for intrvl2 in other.intrvls
                 if predicate(intrvl1, intrvl2)])
 
-    '''
-    Generates a new IntervalList from the cross product of self and other;
-    pairs are processed using the udf.
-    '''
     def cross_udf(self, other, udf):
+        """
+        Generates a new IntervalList from the cross product of self and other;
+        pairs are processed using the udf.
+        """
         return IntervalList(list(itertools.chain.from_iterable([
                 udf(intrvl1, intrvl2) for intrvl1 in self.intrvls for intrvl2 in other.intrvls
             ])))
