@@ -372,7 +372,28 @@ class IntervalListTest(unittest.TestCase):
         self.assertEqual(intrvlsmerge.intrvls[0].__repr__(),
                 "<Interval start:52.0 end:90.0 payload:1>")
 
-    def test_cross(self):
+    def test_map(self):
+        intrvla1 = Interval(1., 25., 1)
+        intrvla2 = Interval(52., 55., 1)
+        intrvla3 = Interval(100., 110., 1)
+        intrvla4 = Interval(200., 210., 1)
+
+        intrvlsa = IntervalList([intrvla2, intrvla3, intrvla1, intrvla4])
+
+        intrvlsa = intrvlsa.map(lambda intrvl: Interval(
+            intrvl.start + 1, intrvl.end + 1, intrvl.payload))
+
+        self.assertEqual(len(intrvlsa.intrvls), 4)
+        self.assertEqual(intrvlsa.intrvls[0].__repr__(),
+                "<Interval start:2.0 end:26.0 payload:1>")
+        self.assertEqual(intrvlsa.intrvls[1].__repr__(),
+                "<Interval start:53.0 end:56.0 payload:1>")
+        self.assertEqual(intrvlsa.intrvls[2].__repr__(),
+                "<Interval start:101.0 end:111.0 payload:1>")
+        self.assertEqual(intrvlsa.intrvls[3].__repr__(),
+                "<Interval start:201.0 end:211.0 payload:1>")
+
+    def test_join(self):
         intrvla1 = Interval(1., 25., 1)
         intrvla2 = Interval(52., 55., 1)
         intrvla3 = Interval(100., 110., 1)
@@ -385,12 +406,45 @@ class IntervalListTest(unittest.TestCase):
         intrvlsa = IntervalList([intrvla2, intrvla3, intrvla1, intrvla4])
         intrvlsb = IntervalList([intrvlb2, intrvlb3, intrvlb1, intrvlb4])
 
-        def myudf(x, y):
-            if x.start == 1. and y.start == 12.:
-                return [Interval(1., 100., 25)]
-            return []
+        def predicate(x, y):
+            return x.start == 1. and y.start == 12.
 
-        intrvlsudf = intrvlsa.cross_udf(intrvlsb, myudf)
+        def merge_op(x, y):
+            return [Interval(1., 100., 25)]
+
+        intrvlsudf = intrvlsa.join(intrvlsb, merge_op=merge_op, predicate=predicate)
         self.assertEqual(len(intrvlsudf.intrvls), 1)
         self.assertEqual(intrvlsudf.intrvls[0].__repr__(),
                 "<Interval start:1.0 end:100.0 payload:25>")
+
+    def test_fold(self):
+        intrvla1 = Interval(1., 25., 1)
+        intrvla2 = Interval(52., 55., 1)
+        intrvla3 = Interval(100., 110., 1)
+        intrvla4 = Interval(200., 210., 1)
+
+        intrvlsa = IntervalList([intrvla2, intrvla3, intrvla1, intrvla4])
+
+        total_payload = intrvlsa.fold(
+                lambda acc, intrvl: acc + intrvl.payload, 0.)
+        self.assertEqual(total_payload, 4)
+
+        total_length = intrvlsa.fold(
+                lambda acc, intrvl: acc + (intrvl.end - intrvl.start), 0.)
+        self.assertEqual(total_length, 47.0)
+
+        def fold_fn(acc, intrvl):
+            acc.append(intrvl)
+            return acc
+
+        intrvlsa = IntervalList(intrvlsa.fold(fold_fn, []))
+        self.assertEqual(len(intrvlsa.intrvls), 4)
+        self.assertEqual(intrvlsa.intrvls[0].__repr__(),
+                "<Interval start:1.0 end:25.0 payload:1>")
+        self.assertEqual(intrvlsa.intrvls[1].__repr__(),
+                "<Interval start:52.0 end:55.0 payload:1>")
+        self.assertEqual(intrvlsa.intrvls[2].__repr__(),
+                "<Interval start:100.0 end:110.0 payload:1>")
+        self.assertEqual(intrvlsa.intrvls[3].__repr__(),
+                "<Interval start:200.0 end:210.0 payload:1>")
+

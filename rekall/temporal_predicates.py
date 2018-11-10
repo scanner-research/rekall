@@ -112,3 +112,6 @@ def and_pred(pred1, pred2):
 
 def or_pred(pred1, pred2):
     return lambda intrvl1, intrvl2: pred1(intrvl1, intrvl2) or pred2(intrvl1, intrvl2) 
+
+def not_pred(pred):
+    return lambda intrvl1, intrvl2: not pred(intrvl1, intrvl2)

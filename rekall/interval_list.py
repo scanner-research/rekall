@@ -1,4 +1,5 @@
 import itertools
+from functools import reduce
 from rekall.common import *
 from rekall.helpers import *
 from rekall.temporal_predicates import *
@@ -92,6 +93,8 @@ class Interval:
         return self.end
     def get_payload(self):
         return self.payload
+    def length(self):
+        return self.end-self.start
 
 
 class IntervalList:
@@ -361,11 +364,39 @@ class IntervalList:
                 for intrvl1 in self.intrvls for intrvl2 in other.intrvls
                 if predicate(intrvl1, intrvl2)])
 
-    def cross_udf(self, other, udf):
+    # ============= GENERAL LIST FUNCTIONS =============
+    def map(self, map_fn):
         """
-        Generates a new IntervalList from the cross product of self and other;
-        pairs are processed using the udf.
+        Maps all the intervals in intrvls.
+
+        map_fn takes in an Interval and returns an Interval
+        """
+        return IntervalList([map_fn(intrvl) for intrvl in self.intrvls])
+
+    def join(self, other, merge_op, predicate):
+        """
+        Joins self.intrvls with other.intrvls on predicate and produces new
+        Intervals based on merge_op.
+
+        merge_op takes in two Intervals and returns a list of Intervals
+        predicate takes in two Intervals and returns True or False
         """
         return IntervalList(list(itertools.chain.from_iterable([
-                udf(intrvl1, intrvl2) for intrvl1 in self.intrvls for intrvl2 in other.intrvls
+                merge_op(intrvl1, intrvl2) for intrvl1 in self.intrvls for intrvl2 in other.intrvls
+                if predicate(intrvl1, intrvl2)
             ])))
+
+    def fold(self, fold_fn, init_acc):
+        """
+        Computes a fold across intrvls.
+
+        fold_fn takes in an accumulator and an Interval.
+        """
+        return reduce(fold_fn, self.intrvls, init_acc)
+
+    def fold_list(self, fold_fn, init_acc):
+        """
+        Computes a fold whose accumulator is a list and returns an
+        IntervalList.
+        """
+        return IntervalList(self.fold(fold_fn, init_acc))

@@ -239,3 +239,10 @@ class TestTemporalPredicates(unittest.TestCase):
         self.assertFalse(or_pred(before(), false_pred())(intrvl1, intrvl2))
         self.assertTrue(or_pred(overlaps_before(), overlaps())(intrvl1, intrvl2))
         self.assertTrue(or_pred(overlaps_before(), before())(intrvl1, intrvl2))
+
+    def test_not(self):
+        intrvl1 = Interval(1., 3., 1)
+        intrvl2 = Interval(2., 4., 1)
+
+        self.assertTrue(overlaps()(intrvl1, intrvl2))
+        self.assertFalse(not_pred(overlaps())(intrvl1, intrvl2))
