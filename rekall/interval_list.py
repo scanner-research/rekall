@@ -112,7 +112,7 @@ class IntervalList:
     
     # ============== GETTERS ==============
     def size(self):
-        """ Gets number of Temporal Ranges stored by this IntervalList.
+        """ Gets number of Intervals stored by this IntervalList.
         """
         return len(self.intrvls)
 
@@ -131,9 +131,9 @@ class IntervalList:
     # ============== FUNCTIONS THAT MODIFY SELF ==============
     def coalesce(self, require_same_payload=False):
         """
-        Recursively merge all overlapping or touching temporal ranges.
+        Recursively merge all overlapping or touching intervals.
 
-        If require_same_payload is True, then only merge ranges that have the same
+        If require_same_payload is True, then only merge intervals that have the same
         payload.
         """
         if len(self.intrvls) == 0:
@@ -191,12 +191,12 @@ class IntervalList:
 
         return self.filter(filter_fn)
 
+    # ============= FUNCTIONS THAT JOIN WITH ANOTHER INTERVAL LIST =============
     def set_union(self, other):
         """ Combine the temporal ranges in self with the temporal ranges in other.
         """
         return IntervalList(self.intrvls + other.intrvls)
 
-    # ============= FUNCTIONS THAT JOIN WITH ANOTHER INTERVAL LIST =============
     def filter_against(self, other, predicate=true_pred()):
         """
         Filter the ranges in self against the ranges in other, only keeping the
