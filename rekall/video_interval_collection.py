@@ -76,8 +76,8 @@ class VideoIntervalCollection:
         def row_accessor(row, field):
             return row[field]
 
-        return from_iterable(dfmaterialized, row_accessor, video_id_field,
-                schema)
+        return VideoIntervalCollection.from_iterable(dfmaterialized,
+                row_accessor, video_id_field, schema)
 
     def from_django_qs(qs, video_id_field="video_id", schema=None):
         """
@@ -97,7 +97,8 @@ class VideoIntervalCollection:
         def row_accessor(row, field):
             return attrgetter(field)(row)
 
-        return from_iterable(qs, row_accessor, video_id_field, schema)
+        return VideoIntervalCollection.from_iterable(qs, row_accessor,
+                video_id_field, schema)
 
     def _remove_empty_intervallists(intervals):
         return { video_id: intervals[video_id]
