@@ -3,6 +3,7 @@ from functools import reduce
 from rekall.common import *
 from rekall.helpers import *
 from rekall.temporal_predicates import *
+from rekall.logical_predicates import *
 
 class Interval:
     """
@@ -197,7 +198,7 @@ class IntervalList:
         """
         return IntervalList(self.intrvls + other.intrvls)
 
-    def filter_against(self, other, predicate=true_pred()):
+    def filter_against(self, other, predicate=true_pred(arity=2)):
         """
         Filter the ranges in self against the ranges in other, only keeping the
         ranges in self that satisfy predicate with at least one other range in
@@ -211,7 +212,7 @@ class IntervalList:
 
         return self.filter(filter_fn)
 
-    def minus(self, other, recursive_diff = True, predicate = true_pred(),
+    def minus(self, other, recursive_diff = True, predicate = true_pred(arity=2),
             payload_producer_fn = intrvl1_payload):
         """
         Calculate the difference between the temporal ranges in self and the temporal ranges
@@ -337,7 +338,7 @@ class IntervalList:
             return IntervalList(output)
 
 
-    def overlaps(self, other, predicate = true_pred(), payload_producer_fn =
+    def overlaps(self, other, predicate = true_pred(arity=2), payload_producer_fn =
             intrvl1_payload):
         """
         Get the overlapping intervals between self and other.
@@ -351,7 +352,7 @@ class IntervalList:
                 if (overlaps()(intrvl1, intrvl2) and
                     predicate(intrvl1, intrvl2))])
 
-    def merge(self, other, predicate = true_pred(), payload_producer_fn =
+    def merge(self, other, predicate = true_pred(arity=2), payload_producer_fn =
             intrvl1_payload):
         """
         Merges pairs of intervals in self and other that satisfy payload_producer_fn.

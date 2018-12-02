@@ -40,12 +40,6 @@ Overlaps:
     Sugar for a more colloquial version of overlapping. Includes Starts/Inv,
     Finishes/Inv, During/Inv, Equal, and OverlapsBefore/After.
 """
-def true_pred():
-    return lambda intrvl1, intrvl2: True;
-
-def false_pred():
-    return lambda intrvl1, intrvl2: False;
-
 def before(min_dist=0, max_dist=INFTY):
     def fn(intrvl1, intrvl2):
         time_diff = intrvl2.start - intrvl1.end
@@ -107,11 +101,3 @@ def meets_after(epsilon=0):
 def equal():
     return lambda intrvl1, intrvl2: intrvl1.start == intrvl2.start and intrvl1.end == intrvl2.end
 
-def and_pred(pred1, pred2):
-    return lambda intrvl1, intrvl2: pred1(intrvl1, intrvl2) and pred2(intrvl1, intrvl2) 
-
-def or_pred(pred1, pred2):
-    return lambda intrvl1, intrvl2: pred1(intrvl1, intrvl2) or pred2(intrvl1, intrvl2) 
-
-def not_pred(pred):
-    return lambda intrvl1, intrvl2: not pred(intrvl1, intrvl2)
