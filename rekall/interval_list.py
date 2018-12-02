@@ -4,6 +4,7 @@ from rekall.common import *
 from rekall.helpers import *
 from rekall.temporal_predicates import *
 from rekall.logical_predicates import *
+from rekall.merge_ops import *
 
 class Interval:
     """
@@ -27,7 +28,7 @@ class Interval:
     def copy(self):
         return Interval(self.start, self.end, self.payload)
 
-    def minus(self, other, payload_producer_fn=intrvl1_payload):
+    def minus(self, other, payload_merge_op=payload_first):
         """
         Computes the interval difference between self and other and returns results
         in an array.
@@ -36,10 +37,10 @@ class Interval:
         Otherwise, returns a list l of intervals such that the members of l
         maximally cover self without overlapping other.
         The payloads of the members of l are determined by
-        payload_producer_fn(self, other).
+        payload_merge_op(self, other).
         """
         if overlaps()(self, other):
-            payload = payload_producer_fn(self, other)
+            payload = payload_merge_op(self.payload, other.payload)
             if during()(self, other) or equal()(self, other):
                 return []
             if overlaps_before()(self, other):
@@ -55,7 +56,7 @@ class Interval:
         else:
             return [self.copy()]
 
-    def overlap(self, other, payload_producer_fn=intrvl1_payload):
+    def overlap(self, other, payload_merge_op=payload_first):
         """
         Computes the interval overlap between self and other.
         If there is no overlap between self and other, returns None.
@@ -63,7 +64,7 @@ class Interval:
         other, with payload produced by lable_producer_fn(self, other).
         """
         if overlaps()(self, other):
-            payload = payload_producer_fn(self, other)
+            payload = payload_merge_op(self.payload, other.payload)
             if (during()(self, other) or equal()(self, other)
                     or starts()(self, other) or finishes()(self, other)):
                 return Interval(self.start, self.end, payload)
@@ -80,11 +81,11 @@ class Interval:
         else:
             return None
 
-    def merge(self, other, payload_producer_fn=intrvl1_payload):
+    def merge(self, other, payload_merge_op=payload_first):
         """
         Computes the minimum interval that contains both self and other.
         """
-        payload = payload_producer_fn(self, other)
+        payload = payload_merge_op(self.payload, other.payload)
         return Interval(min(self.start, other.start),
                 max(self.end, other.end), payload)
 
@@ -129,8 +130,45 @@ class IntervalList:
             total += intrvl.end - intrvl.start
         return total
 
+    # ============= GENERAL LIST FUNCTIONS =============
+    def map(self, map_fn):
+        """
+        Maps all the intervals in intrvls.
+
+        map_fn takes in an Interval and returns an Interval
+        """
+        return IntervalList([map_fn(intrvl) for intrvl in self.intrvls])
+
+    def join(self, other, merge_op, predicate):
+        """
+        Joins self.intrvls with other.intrvls on predicate and produces new
+        Intervals based on merge_op.
+
+        merge_op takes in two Intervals and returns a list of Intervals
+        predicate takes in two Intervals and returns True or False
+        """
+        return IntervalList(list(itertools.chain.from_iterable([
+                merge_op(intrvl1, intrvl2) for intrvl1 in self.intrvls for intrvl2 in other.intrvls
+                if predicate(intrvl1, intrvl2)
+            ])))
+
+    def fold(self, fold_fn, init_acc):
+        """
+        Computes a fold across intrvls.
+
+        fold_fn takes in an accumulator and an Interval.
+        """
+        return reduce(fold_fn, self.intrvls, init_acc)
+
+    def fold_list(self, fold_fn, init_acc):
+        """
+        Computes a fold whose accumulator is a list and returns an
+        IntervalList.
+        """
+        return IntervalList(self.fold(fold_fn, init_acc))
+
     # ============== FUNCTIONS THAT MODIFY SELF ==============
-    def coalesce(self, require_same_payload=False):
+    def coalesce(self, payload_merge_op=payload_first):
         """
         Recursively merge all overlapping or touching intervals.
 
@@ -140,27 +178,21 @@ class IntervalList:
         if len(self.intrvls) == 0:
             return self
         new_intrvls = []
-        first_by_payload = {}
+        cur = None
         for intrvl in self.intrvls:
-            if require_same_payload:
-                payload = intrvl.payload
+            if cur is None:
+                cur = intrvl.copy()
+                continue
+            if intrvl.start >= cur.start and intrvl.start <= cur.end:
+                # intrvl overlaps with cur
+                cur.payload = payload_merge_op(cur.payload, intrvl.payload)
+                if intrvl.end > cur.end:
+                    cur.end = intrvl.end
             else:
-                payload = 0
-            if payload in first_by_payload:
-                first = first_by_payload[payload]
-                if intrvl.start >= first.start and intrvl.start <= first.end:
-                    # intrvl overlaps with first
-                    if intrvl.end > first.end:
-                        # need to push the upper bound of first
-                        first.end = intrvl.end
-                else:
-                    # intrvl does not overlap with first
-                    new_intrvls.append(first_by_payload[payload])
-                    first_by_payload[payload] = intrvl.copy()
-            else:
-                first_by_payload[payload] = intrvl.copy()
-        for intrvl in first_by_payload.values():
-            new_intrvls.append(intrvl)
+                new_intrvls.append(cur)
+                cur = None
+        if cur is not None:
+            new_intrvls.append(cur)
 
         return IntervalList(new_intrvls)
 
@@ -213,7 +245,7 @@ class IntervalList:
         return self.filter(filter_fn)
 
     def minus(self, other, recursive_diff = True, predicate = true_pred(arity=2),
-            payload_producer_fn = intrvl1_payload):
+            payload_merge_op = payload_first):
         """
         Calculate the difference between the temporal ranges in self and the temporal ranges
         in other.
@@ -248,7 +280,7 @@ class IntervalList:
         If an interval in self overlaps no pairs in other such that the two
         satisfy predicate, then the interval is reproduced in the output.
 
-        Labels the resulting intervals with payload_producer_fn. For recursive_diff,
+        Labels the resulting intervals with payload_merge_op. For recursive_diff,
         the intervals passed in to the payload producer function are the original
         interval and the first interval that touches the output interval.
         """
@@ -331,73 +363,37 @@ class IntervalList:
                     end = subsequence[1]
                     for intrvl in overlapping:
                         if intrvl.end == start or intrvl.start == end:
-                            payload = payload_producer_fn(intrvl1, intrvl)
+                            payload = payload_merge_op(intrvl1.payload, intrvl.payload)
                             output.append(Interval(start, end, payload))
                             break
 
             return IntervalList(output)
 
 
-    def overlaps(self, other, predicate = true_pred(arity=2), payload_producer_fn =
-            intrvl1_payload):
+    def overlaps(self, other, predicate = true_pred(arity=2), payload_merge_op =
+            payload_first):
         """
         Get the overlapping intervals between self and other.
 
         Only processes pairs that overlap and that satisfy predicate.
 
-        Labels the resulting intervals with payload_producer_fn.
+        Labels the resulting intervals with payload_merge_op.
         """
-        return IntervalList([intrvl1.overlap(intrvl2, payload_producer_fn)
+        return IntervalList([intrvl1.overlap(intrvl2, payload_merge_op)
                 for intrvl1 in self.intrvls for intrvl2 in other.intrvls
                 if (overlaps()(intrvl1, intrvl2) and
                     predicate(intrvl1, intrvl2))])
 
-    def merge(self, other, predicate = true_pred(arity=2), payload_producer_fn =
-            intrvl1_payload):
+    def merge(self, other, predicate = true_pred(arity=2), payload_merge_op =
+            payload_first):
         """
-        Merges pairs of intervals in self and other that satisfy payload_producer_fn.
+        Merges pairs of intervals in self and other that satisfy predicate.
 
         Only processes pairs that satisfy predicate.
 
-        Labels the resulting intervals with payload_producer_fn.
+        Labels the resulting intervals with payload_merge_op.
         """
-        return IntervalList([intrvl1.merge(intrvl2, payload_producer_fn)
+        return IntervalList([intrvl1.merge(intrvl2, payload_merge_op)
                 for intrvl1 in self.intrvls for intrvl2 in other.intrvls
                 if predicate(intrvl1, intrvl2)])
 
-    # ============= GENERAL LIST FUNCTIONS =============
-    def map(self, map_fn):
-        """
-        Maps all the intervals in intrvls.
-
-        map_fn takes in an Interval and returns an Interval
-        """
-        return IntervalList([map_fn(intrvl) for intrvl in self.intrvls])
-
-    def join(self, other, merge_op, predicate):
-        """
-        Joins self.intrvls with other.intrvls on predicate and produces new
-        Intervals based on merge_op.
-
-        merge_op takes in two Intervals and returns a list of Intervals
-        predicate takes in two Intervals and returns True or False
-        """
-        return IntervalList(list(itertools.chain.from_iterable([
-                merge_op(intrvl1, intrvl2) for intrvl1 in self.intrvls for intrvl2 in other.intrvls
-                if predicate(intrvl1, intrvl2)
-            ])))
-
-    def fold(self, fold_fn, init_acc):
-        """
-        Computes a fold across intrvls.
-
-        fold_fn takes in an accumulator and an Interval.
-        """
-        return reduce(fold_fn, self.intrvls, init_acc)
-
-    def fold_list(self, fold_fn, init_acc):
-        """
-        Computes a fold whose accumulator is a list and returns an
-        IntervalList.
-        """
-        return IntervalList(self.fold(fold_fn, init_acc))

@@ -1,7 +1,9 @@
 from operator import attrgetter
 from rekall.interval_list import IntervalList
 from rekall.temporal_predicates import *
+from rekall.logical_predicates import *
 from rekall.helpers import *
+from rekall.merge_ops import *
 
 class VideoIntervalCollection:
     """
@@ -21,7 +23,8 @@ class VideoIntervalCollection:
                 for video_id in video_ids_to_intervals
         }
 
-    def from_iterable(iterable, accessor, video_id_field, schema):
+    def from_iterable(iterable, accessor, video_id_field, schema,
+            with_payload=None):
         """
         Construct a VideoIntervalCollection from an iterable collection.
 
@@ -37,16 +40,18 @@ class VideoIntervalCollection:
             "end": "max_frame",
             "payload": "id"
         }
-
-        Note that if you want more complex payloads, you can change up the
-        accessor function.
+        @with_payload is for more complex payloads. If with_payload is None,
+        then the payload just uses the field name from the schema. Otherwise,
+        with_payload is a function that gets a payload from rows in the
+        iterable.
         """
         video_ids_to_intervals = {}
         for row in iterable:
             new_tuple = (
                 accessor(row, schema["start"]),
                 accessor(row, schema["end"]),
-                accessor(row, schema["payload"])
+                accessor(row, schema["payload"]) if with_payload is None
+                else with_payload(row)
             )
             video_id = accessor(row, video_id_field)
             if accessor(row, video_id_field) in video_ids_to_intervals:
@@ -56,7 +61,11 @@ class VideoIntervalCollection:
 
         return VideoIntervalCollection(video_ids_to_intervals)
 
-    def from_spark_df(dataframe, video_id_field="video_id", schema=None):
+    def spark_accessor(row, field):
+            return row[field]
+
+    def from_spark_df(dataframe, video_id_field="video_id", schema=None,
+            with_payload=None):
         """
         Constructor from a Spark dataframe.
         By default, the schema is 
@@ -73,13 +82,15 @@ class VideoIntervalCollection:
 
         dfmaterialized = dataframe.collect()
 
-        def row_accessor(row, field):
-            return row[field]
-
         return VideoIntervalCollection.from_iterable(dfmaterialized,
-                row_accessor, video_id_field, schema)
+                VideoIntervalCollection.spark_accessor, video_id_field, schema,
+                with_payload=with_payload)
 
-    def from_django_qs(qs, video_id_field="video_id", schema=None):
+    def django_accessor(row, field):
+        return attrgetter(field)(row)
+
+    def from_django_qs(qs, video_id_field="video_id", schema=None,
+            with_payload=None):
         """
         Constructor for a Django queryset.
         By default, the schema is 
@@ -94,11 +105,9 @@ class VideoIntervalCollection:
                     "end": "max_frame",
                     "payload": "id" }
 
-        def row_accessor(row, field):
-            return attrgetter(field)(row)
-
-        return VideoIntervalCollection.from_iterable(qs, row_accessor,
-                video_id_field, schema)
+        return VideoIntervalCollection.from_iterable(qs,
+                VideoIntervalCollection.django_accessor, video_id_field,
+                schema, with_payload=with_payload)
 
     def _remove_empty_intervallists(intervals):
         return { video_id: intervals[video_id]
@@ -112,7 +121,7 @@ class VideoIntervalCollection:
         return self.intervals
 
     # ============== FUNCTIONS THAT MODIFY SELF ==============
-    def coalesce(self, require_same_payload=False):
+    def coalesce(self, payload_merge_op=payload_first):
         """ See IntervalList#coalesce for details. """
         return VideoIntervalCollection(_remove_empty_intervallists({
             video_id: self.intervals[video_id].coalesce(
@@ -193,7 +202,7 @@ class VideoIntervalCollection:
             )
             for video_id in video_ids })
 
-    def filter_against(self, other, predicate=true_pred()):
+    def filter_against(self, other, predicate=true_pred(arity=2)):
         """
         Inner join on video ID's, computing IntervalList#filter_against.
         """
@@ -203,8 +212,8 @@ class VideoIntervalCollection:
             for video_id in list(self.intervals.keys())
             if video_id in list(other.intervals.keys()) }))
 
-    def minus(self, other, recursive_diff = True, predicate = true_pred(),
-        payload_producer_fn=intrvl1_payload):
+    def minus(self, other, recursive_diff = True, predicate = true_pred(arity=2),
+        payload_merge_op=payload_first):
         """ Left outer join on video ID's, computing IntervalList#minus. """
         return VideoIntervalCollection(_remove_empty_intervallists({
             video_id : (
@@ -215,23 +224,23 @@ class VideoIntervalCollection:
             )
             for video_id in list(self.intervals.keys()) }))
 
-    def overlaps(self, other, predicate = true_pred(), payload_producer_fn =
-        intrvl1_payload):
+    def overlaps(self, other, predicate = true_pred(arity=2), payload_merge_op =
+        payload_first):
         """ Inner join on video ID's, computing IntervalList#overlaps. """
         return VideoIntervalCollection(_remove_empty_intervallists({
             video_id: self.intervals[video_id].overlaps(
                 other.intervals[video_id], predicate = predicate,
-                payload_producer_fn = payload_producer_fn)
+                payload_merge_op = payload_producer_fn)
             for video_id in list(self.intervals.keys())
             if video_id in list(other.intervals.keys()) }))
 
-    def merge(self, other, predicate = true_pred(), payload_producer_fn =
-        intrvl1_payload):
+    def merge(self, other, predicate = true_pred(arity=2), payload_merge_op =
+        payload_first):
         """ Inner join on video ID's, computing IntervalList#merge. """
         return VideoIntervalCollection(_remove_empty_intervallists({
             video_id: self.intervals[video_id].merge(
                 other.intervals[video_id], predicate = predicate,
-                payload_producer_fn = payload_producer_fn)
+                payload_merge_op = payload_producer_fn)
             for video_id in list(self.intervals.keys())
             if video_id in list(other.intervals.keys()) }))
 
