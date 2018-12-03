@@ -19,7 +19,7 @@ class Interval:
         self.payload = payload
 
     def sort_key(intrvl):
-        return (intrvl.start, intrvl.end, intrvl.payload)
+        return (intrvl.start, intrvl.end)
 
     def __repr__(self):
         return "<Interval start:{} end:{} payload:{}>".format(self.start,
@@ -101,10 +101,12 @@ class Interval:
 
 class IntervalList:
     """
-    A IntervalList is a wrapper around a list of Temporal Ranges that contains
+    A IntervalList is a wrapper around a list of Intervals that contains
     a number of useful helper functions.
     """
     def __init__(self, intrvls):
+        if isinstance(intrvls, IntervalList):
+            intrvls = intrvls.intrvls
         self.intrvls = sorted([intrvl if isinstance(intrvl, Interval)
                 else Interval(intrvl[0], intrvl[1], intrvl[2]) for intrvl in intrvls],
                 key = Interval.sort_key)

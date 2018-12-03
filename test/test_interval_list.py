@@ -1,4 +1,5 @@
 from rekall.temporal_predicates import *
+from rekall.merge_ops import *
 from rekall.interval_list import Interval, IntervalList
 import unittest
 
@@ -13,7 +14,7 @@ class TestInterval(unittest.TestCase):
         self.assertEqual(intrvl1minusintrvl2[0].__repr__(),
                 "<Interval start:1.0 end:1.5 payload:1>")
 
-        intrvl1minusintrvl2 = intrvl1.minus(intrvl2, payload_producer_fn=lambda x, y: y.payload)
+        intrvl1minusintrvl2 = intrvl1.minus(intrvl2, payload_merge_op=payload_second)
 
         self.assertEqual(len(intrvl1minusintrvl2), 1)
         self.assertEqual(intrvl1minusintrvl2[0].__repr__(),
@@ -38,7 +39,7 @@ class TestInterval(unittest.TestCase):
         self.assertEqual(intrvl1.overlap(intrvl2).__repr__(),
                 "<Interval start:1.5 end:2.0 payload:1>")
         self.assertEqual(intrvl1.overlap(intrvl2,
-            payload_producer_fn=lambda x, y: y.payload).__repr__(),
+            payload_merge_op=payload_second).__repr__(),
                 "<Interval start:1.5 end:2.0 payload:2>")
 
         intrvl3 = Interval(1.3, 1.6, 5)
@@ -58,7 +59,7 @@ class TestInterval(unittest.TestCase):
         self.assertEqual(intrvl1.merge(intrvl2).__repr__(),
                 "<Interval start:1.0 end:2.5 payload:1>")
         self.assertEqual(intrvl1.merge(intrvl2,
-            payload_producer_fn=lambda x, y: y.payload).__repr__(),
+            payload_merge_op=payload_second).__repr__(),
                 "<Interval start:1.0 end:2.5 payload:2>")
 
         intrvl3 = Interval(5., 7., 1)
@@ -111,17 +112,10 @@ class IntervalListTest(unittest.TestCase):
 
         intrvls1 = IntervalList([intrvl1, intrvl2])
         intrvlscoalesced = intrvls1.coalesce()
-        intrvlscoalesced_samepayload = intrvls1.coalesce(require_same_payload=True)
 
         self.assertEqual(len(intrvlscoalesced.intrvls), 1)
         self.assertEqual(intrvlscoalesced.intrvls[0].__repr__(),
                 "<Interval start:1.0 end:2.5 payload:1>")
-
-        self.assertEqual(len(intrvlscoalesced_samepayload.intrvls), 2)
-        self.assertEqual(intrvlscoalesced_samepayload.intrvls[0].__repr__(),
-                "<Interval start:1.0 end:2.0 payload:1>")
-        self.assertEqual(intrvlscoalesced_samepayload.intrvls[1].__repr__(),
-                "<Interval start:1.5 end:2.5 payload:2>")
 
     def test_dilate(self):
         intrvl1 = Interval(1., 2., 1)
@@ -217,7 +211,7 @@ class IntervalListTest(unittest.TestCase):
         self.assertEqual(len(intrvlsminusnonrec.intrvls), 15)
 
         intrvlsminusrec = intrvlslong.minus(intrvlsshort,
-                payload_producer_fn=lambda x, y: y.payload)
+                payload_merge_op=payload_second)
         self.assertEqual(len(intrvlsminusrec.intrvls), 7)
         self.assertEqual(intrvlsminusrec.intrvls[0].__repr__(),
             "<Interval start:1.0 end:2.0 payload:3>")
@@ -299,7 +293,7 @@ class IntervalListTest(unittest.TestCase):
                 "<Interval start:12.0 end:25.0 payload:1>")
 
         intrvlsoverlap = intrvlsa.overlaps(intrvlsb, predicate=overlaps_before(),
-                payload_producer_fn=lambda x, y: y.payload)
+                payload_merge_op=payload_second)
         self.assertEqual(len(intrvlsoverlap.intrvls), 1)
         self.assertEqual(intrvlsoverlap.intrvls[0].__repr__(),
                 "<Interval start:12.0 end:25.0 payload:2>")
@@ -345,7 +339,7 @@ class IntervalListTest(unittest.TestCase):
                 "<Interval start:1.0 end:26.0 payload:1>")
 
         intrvlsmerge = intrvlsa.merge(intrvlsb, predicate=overlaps_before(),
-                payload_producer_fn=lambda x, y: y.payload)
+                payload_merge_op=payload_second)
         self.assertEqual(len(intrvlsmerge.intrvls), 1)
         self.assertEqual(intrvlsmerge.intrvls[0].__repr__(),
                 "<Interval start:1.0 end:26.0 payload:2>")

@@ -15,12 +15,12 @@ class VideoIntervalCollection:
     # ============== CONSTRUCTORS ==============
     def __init__(self, video_ids_to_intervals):
         """
-        video_ids_to_intervals is a dict mapping from video ID to lists of
-        (start, end, payload) tuples.
+        video_ids_to_intervals is a dict mapping from video ID to either lists
+        of (start, end, payload) tuples or an IntervalList.
         """
         self.intervals = {
-                video_id: IntervalList(video_ids_to_intervals[video_id])
-                for video_id in video_ids_to_intervals
+            video_id: IntervalList(video_ids_to_intervals[video_id])
+            for video_id in video_ids_to_intervals
         }
 
     def from_iterable(iterable, accessor, video_id_field, schema,
@@ -123,29 +123,33 @@ class VideoIntervalCollection:
     # ============== FUNCTIONS THAT MODIFY SELF ==============
     def coalesce(self, payload_merge_op=payload_first):
         """ See IntervalList#coalesce for details. """
-        return VideoIntervalCollection(_remove_empty_intervallists({
-            video_id: self.intervals[video_id].coalesce(
-                require_same_payload)
-            for video_id in list(self.intervals.keys()) }))
+        return VideoIntervalCollection(
+                VideoIntervalCollection._remove_empty_intervallists({
+                    video_id: self.intervals[video_id].coalesce(
+                        payload_merge_op)
+                    for video_id in list(self.intervals.keys()) }))
 
     def dilate(self, window):
         """ See IntervalList#dilate for details. """
-        return VideoIntervalCollection(_remove_empty_intervallists({
-            video_id: self.intervals[video_id].dilate(window)
-            for video_id in list(self.intervals.keys()) }))
+        return VideoIntervalCollection(
+                VideoIntervalCollection._remove_empty_intervallists({
+                    video_id: self.intervals[video_id].dilate(window)
+                    for video_id in list(self.intervals.keys()) }))
 
     def filter(self, fn):
         """ See IntervalList#filter for details. """
-        return VideoIntervalCollection(_remove_empty_intervallists({
-            video_id: self.intervals[video_id].filter(fn)
-            for video_id in list(self.intervals.keys()) }))
+        return VideoIntervalCollection(
+                VideoIntervalCollection._remove_empty_intervallists({
+                    video_id: self.intervals[video_id].filter(fn)
+                    for video_id in list(self.intervals.keys()) }))
 
     def filter_length(self, min_length=0, max_length=INFTY):
         """ See IntervalList#filter_length for details. """
-        return VideoIntervalCollection(_remove_empty_intervallists({
-            video_id: self.intervals[video_id].filter_length(
-                min_length, max_length)
-            for video_id in list(self.intervals.keys()) }))
+        return VideoIntervalCollection(
+                VideoIntervalCollection._remove_empty_intervallists({
+                    video_id: self.intervals[video_id].filter_length(
+                        min_length, max_length)
+                    for video_id in list(self.intervals.keys()) }))
 
     # ============== GENERAL LIST OPERATIONS ==============
     def map(self, map_fn):
@@ -159,13 +163,14 @@ class VideoIntervalCollection:
         Inner join on video ID between self and other, and then join the
         IntervalList's of self and other for the video ID.
         """
-        return VideoIntervalCollection(_remove_empty_intervallists({
-            video_id: self.intervals[video_id].join(
-                other.intervals[video_id],
-                merge_op,
-                predicate)
-            for video_id in list(self.intervals.keys())
-            if video_id in other.intervals }))
+        return VideoIntervalCollection(
+                VideoIntervalCollection._remove_empty_intervallists({
+                    video_id: self.intervals[video_id].join(
+                        other.intervals[video_id],
+                        merge_op,
+                        predicate)
+                    for video_id in list(self.intervals.keys())
+                    if video_id in other.intervals }))
 
     def fold(self, fold_fn, init_acc):
         """
@@ -180,9 +185,11 @@ class VideoIntervalCollection:
         Assumes that the accumulator is a list of Intervals; applies the fold
         function to each IntervalList and returns a Video IntervalCollection.
         """
-        return VideoIntervalCollection(_remove_empty_intervallists({
-            video_id: self.intervals[video_id].fold_list(fold_fn, init_acc)
-            for video_id in list(self.intervals.keys()) }))
+        return VideoIntervalCollection(
+                VideoIntervalCollection._remove_empty_intervallists({
+                    video_id: self.intervals[video_id].fold_list(
+                        fold_fn, init_acc)
+                    for video_id in list(self.intervals.keys()) }))
 
     # ============== FUNCTIONS THAT JOIN WITH ANOTHER COLLECTION ==============
     
@@ -206,41 +213,45 @@ class VideoIntervalCollection:
         """
         Inner join on video ID's, computing IntervalList#filter_against.
         """
-        return VideoIntervalCollection(_remove_empty_intervallists({
-            video_id : self.intervals[video_id].filter_against(
-                other.intervals[video_id], predicate)
-            for video_id in list(self.intervals.keys())
-            if video_id in list(other.intervals.keys()) }))
+        return VideoIntervalCollection(
+                VideoIntervalCollection._remove_empty_intervallists({
+                    video_id : self.intervals[video_id].filter_against(
+                        other.intervals[video_id], predicate)
+                    for video_id in list(self.intervals.keys())
+                    if video_id in list(other.intervals.keys()) }))
 
     def minus(self, other, recursive_diff = True, predicate = true_pred(arity=2),
         payload_merge_op=payload_first):
         """ Left outer join on video ID's, computing IntervalList#minus. """
-        return VideoIntervalCollection(_remove_empty_intervallists({
-            video_id : (
-                self.intervals[video_id].minus(
-                    other.intervals[video_id], predicate)
-                if video_id in other.intervals.keys()
-                else self.intervals[video_id]
-            )
-            for video_id in list(self.intervals.keys()) }))
+        return VideoIntervalCollection(
+                VideoIntervalCollection._remove_empty_intervallists({
+                    video_id : (
+                        self.intervals[video_id].minus(
+                            other.intervals[video_id], predicate)
+                        if video_id in other.intervals.keys()
+                        else self.intervals[video_id]
+                    )
+                    for video_id in list(self.intervals.keys()) }))
 
     def overlaps(self, other, predicate = true_pred(arity=2), payload_merge_op =
         payload_first):
         """ Inner join on video ID's, computing IntervalList#overlaps. """
-        return VideoIntervalCollection(_remove_empty_intervallists({
-            video_id: self.intervals[video_id].overlaps(
-                other.intervals[video_id], predicate = predicate,
-                payload_merge_op = payload_producer_fn)
-            for video_id in list(self.intervals.keys())
-            if video_id in list(other.intervals.keys()) }))
+        return VideoIntervalCollection(
+                VideoIntervalCollection._remove_empty_intervallists({
+                    video_id: self.intervals[video_id].overlaps(
+                        other.intervals[video_id], predicate = predicate,
+                        payload_merge_op = payload_producer_fn)
+                    for video_id in list(self.intervals.keys())
+                    if video_id in list(other.intervals.keys()) }))
 
     def merge(self, other, predicate = true_pred(arity=2), payload_merge_op =
         payload_first):
         """ Inner join on video ID's, computing IntervalList#merge. """
-        return VideoIntervalCollection(_remove_empty_intervallists({
-            video_id: self.intervals[video_id].merge(
-                other.intervals[video_id], predicate = predicate,
-                payload_merge_op = payload_producer_fn)
-            for video_id in list(self.intervals.keys())
-            if video_id in list(other.intervals.keys()) }))
+        return VideoIntervalCollection(
+                VideoIntervalCollection._remove_empty_intervallists({
+                    video_id: self.intervals[video_id].merge(
+                        other.intervals[video_id], predicate = predicate,
+                        payload_merge_op = payload_producer_fn)
+                    for video_id in list(self.intervals.keys())
+                    if video_id in list(other.intervals.keys()) }))
 
