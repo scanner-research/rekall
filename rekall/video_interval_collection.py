@@ -240,7 +240,7 @@ class VideoIntervalCollection:
                 VideoIntervalCollection._remove_empty_intervallists({
                     video_id: self.intervals[video_id].overlaps(
                         other.intervals[video_id], predicate = predicate,
-                        payload_merge_op = payload_producer_fn)
+                        payload_merge_op = payload_merge_op)
                     for video_id in list(self.intervals.keys())
                     if video_id in list(other.intervals.keys()) }))
 
@@ -251,7 +251,7 @@ class VideoIntervalCollection:
                 VideoIntervalCollection._remove_empty_intervallists({
                     video_id: self.intervals[video_id].merge(
                         other.intervals[video_id], predicate = predicate,
-                        payload_merge_op = payload_producer_fn)
+                        payload_merge_op = payload_merge_op)
                     for video_id in list(self.intervals.keys())
                     if video_id in list(other.intervals.keys()) }))
 
