@@ -158,7 +158,7 @@ class VideoIntervalCollection:
             video_id: self.intervals[video_id].map(map_fn)
             for video_id in list(self.intervals.keys()) })
 
-    def join(self, other, merge_op, predicate):
+    def join(self, other, merge_op, predicate, working_window=None):
         """
         Inner join on video ID between self and other, and then join the
         IntervalList's of self and other for the video ID.
@@ -168,7 +168,8 @@ class VideoIntervalCollection:
                     video_id: self.intervals[video_id].join(
                         other.intervals[video_id],
                         merge_op,
-                        predicate)
+                        predicate,
+                        working_window)
                     for video_id in list(self.intervals.keys())
                     if video_id in other.intervals }))
 
@@ -209,49 +210,53 @@ class VideoIntervalCollection:
             )
             for video_id in video_ids })
 
-    def filter_against(self, other, predicate=true_pred(arity=2)):
+    def filter_against(self, other, predicate=true_pred(arity=2),
+            working_window=None):
         """
         Inner join on video ID's, computing IntervalList#filter_against.
         """
         return VideoIntervalCollection(
                 VideoIntervalCollection._remove_empty_intervallists({
                     video_id : self.intervals[video_id].filter_against(
-                        other.intervals[video_id], predicate)
+                        other.intervals[video_id], predicate, working_window)
                     for video_id in list(self.intervals.keys())
                     if video_id in list(other.intervals.keys()) }))
 
-    def minus(self, other, recursive_diff = True, predicate = true_pred(arity=2),
-        payload_merge_op=payload_first):
+    def minus(self, other, recursive_diff = True, predicate=true_pred(arity=2),
+            payload_merge_op=payload_first, working_window=None):
         """ Left outer join on video ID's, computing IntervalList#minus. """
         return VideoIntervalCollection(
                 VideoIntervalCollection._remove_empty_intervallists({
                     video_id : (
                         self.intervals[video_id].minus(
-                            other.intervals[video_id], predicate)
+                            other.intervals[video_id], predicate,
+                            working_window)
                         if video_id in other.intervals.keys()
                         else self.intervals[video_id]
                     )
                     for video_id in list(self.intervals.keys()) }))
 
     def overlaps(self, other, predicate = true_pred(arity=2), payload_merge_op =
-        payload_first):
+            payload_first, working_window=None):
         """ Inner join on video ID's, computing IntervalList#overlaps. """
         return VideoIntervalCollection(
                 VideoIntervalCollection._remove_empty_intervallists({
                     video_id: self.intervals[video_id].overlaps(
                         other.intervals[video_id], predicate = predicate,
-                        payload_merge_op = payload_merge_op)
+                        payload_merge_op = payload_merge_op,
+                        working_window = working_window)
                     for video_id in list(self.intervals.keys())
                     if video_id in list(other.intervals.keys()) }))
 
     def merge(self, other, predicate = true_pred(arity=2), payload_merge_op =
-        payload_first):
+            payload_first, working_window=None):
         """ Inner join on video ID's, computing IntervalList#merge. """
         return VideoIntervalCollection(
                 VideoIntervalCollection._remove_empty_intervallists({
                     video_id: self.intervals[video_id].merge(
                         other.intervals[video_id], predicate = predicate,
-                        payload_merge_op = payload_merge_op)
+                        payload_merge_op = payload_merge_op,
+                        working_window = working_window)
                     for video_id in list(self.intervals.keys())
                     if video_id in list(other.intervals.keys()) }))
 

@@ -101,8 +101,22 @@ class Interval:
 
 class IntervalList:
     """
-    A IntervalList is a wrapper around a list of Intervals that contains
-    a number of useful helper functions.
+    A IntervalList is a wrapper around a list of Intervals.
+
+    IntervalList provides core operations map, fold, join, coalesce, and minus.
+    See the respective functions for what each does.
+
+    IntervalList also provides sugared functions merge and overlaps, which are
+    common ways to use join in a temporal domain.
+
+    OPTIMIZATION: If there are more than 1000 intervals, join operations will
+        work over a "working window" equal to 1/100th of the total timespan
+        covered by the IntervalList. Instead of computing the full cross
+        product for a join and then filtering those pairs by the predicate,
+        it only runs the predicate for intervals that differ in time by less
+        than the working window. On large IntervalLists, this can increase
+        performance dramatically. Users can set the working_window manually
+        for all join operations.
     """
     def __init__(self, intrvls):
         if isinstance(intrvls, IntervalList):
@@ -110,6 +124,14 @@ class IntervalList:
         self.intrvls = sorted([intrvl if isinstance(intrvl, Interval)
                 else Interval(intrvl[0], intrvl[1], intrvl[2]) for intrvl in intrvls],
                 key = Interval.sort_key)
+        if len(self.intrvls) > 0:
+            max_end = max([intrvl.end for intrvl in self.intrvls])
+            if len(self.intrvls) > 1000:
+                self.working_window = (max_end - self.intrvls[0].start) / 100
+            else:
+                self.working_window = (max_end - self.intrvls[0].start)
+        else:
+            self.working_window = 0
 
     def __repr__(self):
         return str(self.intrvls)
@@ -141,7 +163,7 @@ class IntervalList:
         """
         return IntervalList([map_fn(intrvl) for intrvl in self.intrvls])
 
-    def join(self, other, merge_op, predicate):
+    def join(self, other, merge_op, predicate, working_window=None):
         """
         Joins self.intrvls with other.intrvls on predicate and produces new
         Intervals based on merge_op.
@@ -149,10 +171,27 @@ class IntervalList:
         merge_op takes in two Intervals and returns a list of Intervals
         predicate takes in two Intervals and returns True or False
         """
-        return IntervalList(list(itertools.chain.from_iterable([
-                merge_op(intrvl1, intrvl2) for intrvl1 in self.intrvls for intrvl2 in other.intrvls
-                if predicate(intrvl1, intrvl2)
-            ])))
+        if working_window == None:
+            working_window = self.working_window
+        output = []
+        start_index = 0
+        for intrvl in self.intrvls:
+            new_start_index = None
+            for idx, intrvlother in enumerate(other.intrvls[start_index:]):
+                if new_start_index is None:
+                    if intrvl.start < intrvlother.start:
+                        new_start_index = idx
+                    elif intrvl.start - working_window <= intrvlother.end:
+                        new_start_index = idx
+                if intrvlother.start - working_window > intrvl.end:
+                    break
+                if predicate(intrvl, intrvlother):
+                    new_intrvls = merge_op(intrvl, intrvlother)
+                    if len(new_intrvls) > 0:
+                        output += new_intrvls
+            if new_start_index is not None:
+                start_index += new_start_index
+        return IntervalList(output)
 
     def fold(self, fold_fn, init_acc):
         """
@@ -232,22 +271,41 @@ class IntervalList:
         """
         return IntervalList(self.intrvls + other.intrvls)
 
-    def filter_against(self, other, predicate=true_pred(arity=2)):
+    def filter_against(self, other, predicate=true_pred(arity=2),
+            working_window=None):
         """
         Filter the ranges in self against the ranges in other, only keeping the
         ranges in self that satisfy predicate with at least one other range in
         other.
         """
-        def filter_fn(intrvl):
-            for intrvlother in other.intrvls:
-                if predicate(intrvl, intrvlother):
-                    return True
-            return False
+        if working_window == None:
+            working_window = self.working_window
 
-        return self.filter(filter_fn)
+        start_index = 0
+        output = []
+        for intrvl in self.intrvls:
+            new_start_index = None
+            add_intrvl = False
+            for idx, intrvlother in enumerate(other.intrvls[start_index:]):
+                if new_start_index is None:
+                    if intrvl.start < intrvlother.start:
+                        new_start_index = idx
+                    elif intrvl.start - working_window <= intrvlother.end:
+                        new_start_index = idx
+                if intrvlother.start - working_window > intrvl.end:
+                    break
+                if predicate(intrvl, intrvlother):
+                    add_intrvl = True
+                    break
+            if new_start_index is not None:
+                start_index += new_start_index
+            if add_intrvl:
+                output.append(intrvl.copy())
+
+        return IntervalList(output)
 
     def minus(self, other, recursive_diff = True, predicate = true_pred(arity=2),
-            payload_merge_op = payload_first):
+            payload_merge_op = payload_first, working_window=None):
         """
         Calculate the difference between the temporal ranges in self and the temporal ranges
         in other.
@@ -287,25 +345,27 @@ class IntervalList:
         interval and the first interval that touches the output interval.
         """
         if not recursive_diff:
-            output = []
-            for intrvl1 in self.intrvls:
-                found_overlap = False
-                for intrvl2 in other.intrvls:
-                    if overlaps()(intrvl1, intrvl2) and predicate(intrvl1, intrvl2):
-                        found_overlap = True
-                        candidates = intrvl1.minus(intrvl2)
-                        if len(candidates) > 0:
-                            output = output + candidates
-                if not found_overlap:
-                    output.append(intrvl1.copy())
-            return IntervalList(output)
+            return self.join(other, lambda intrvl1, intrvl2:
+                    intrvl1.minus(intrvl2, payload_merge_op),
+                    and_pred(overlaps(), predicate, arity=2),
+                    working_window)
         else:
+            if working_window == None:
+                working_window = self.working_window
+
+            start_index = 0
             output = []
             for intrvl1 in self.intrvls:
                 # For each interval in self.intrvls, get all the overlapping
                 #   intervals from other.intrvls
                 overlapping = []
-                for intrvl2 in other.intrvls:
+                new_start_index = None
+                for idx, intrvl2 in enumerate(other.intrvls[start_index:]):
+                    if new_start_index is None:
+                        if intrvl1.start < intrvl2.start:
+                            new_start_index = idx
+                        elif intrvl1.start - working_window <= intrvl2.end:
+                            new_start_index = idx
                     if intrvl1 == intrvl2:
                         continue
                     if before()(intrvl1, intrvl2):
@@ -313,6 +373,8 @@ class IntervalList:
                     if (overlaps()(intrvl1, intrvl2) and
                         predicate(intrvl1, intrvl2)):
                         overlapping.append(intrvl2)
+                if new_start_index is not None:
+                    start_index += new_start_index
 
                 if len(overlapping) == 0:
                     output.append(intrvl1.copy())
@@ -373,7 +435,7 @@ class IntervalList:
 
 
     def overlaps(self, other, predicate = true_pred(arity=2), payload_merge_op =
-            payload_first):
+            payload_first, working_window=None):
         """
         Get the overlapping intervals between self and other.
 
@@ -381,13 +443,13 @@ class IntervalList:
 
         Labels the resulting intervals with payload_merge_op.
         """
-        return IntervalList([intrvl1.overlap(intrvl2, payload_merge_op)
-                for intrvl1 in self.intrvls for intrvl2 in other.intrvls
-                if (overlaps()(intrvl1, intrvl2) and
-                    predicate(intrvl1, intrvl2))])
+        def merge_op(intrvl1, intrvl2):
+            return [intrvl1.overlap(intrvl2, payload_merge_op)]
+        return self.join(other, merge_op, and_pred(overlaps(), predicate,
+            arity=2), working_window)
 
     def merge(self, other, predicate = true_pred(arity=2), payload_merge_op =
-            payload_first):
+            payload_first, working_window=None):
         """
         Merges pairs of intervals in self and other that satisfy predicate.
 
@@ -395,7 +457,7 @@ class IntervalList:
 
         Labels the resulting intervals with payload_merge_op.
         """
-        return IntervalList([intrvl1.merge(intrvl2, payload_merge_op)
-                for intrvl1 in self.intrvls for intrvl2 in other.intrvls
-                if predicate(intrvl1, intrvl2)])
+        def merge_op(intrvl1, intrvl2):
+            return [intrvl1.merge(intrvl2, payload_merge_op)]
+        return self.join(other, merge_op, predicate, working_window)
 
