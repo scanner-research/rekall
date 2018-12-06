@@ -231,7 +231,7 @@ class IntervalList:
                     cur.end = intrvl.end
             else:
                 new_intrvls.append(cur)
-                cur = None
+                cur = intrvl.copy()
         if cur is not None:
             new_intrvls.append(cur)
 
