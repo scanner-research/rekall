@@ -366,10 +366,6 @@ class IntervalList:
                             new_start_index = idx
                         elif intrvl1.start - working_window <= intrvl2.end:
                             new_start_index = idx
-                    if intrvl1 == intrvl2:
-                        continue
-                    if before()(intrvl1, intrvl2):
-                        break
                     if (overlaps()(intrvl1, intrvl2) and
                         predicate(intrvl1, intrvl2)):
                         overlapping.append(intrvl2)
@@ -378,6 +374,10 @@ class IntervalList:
 
                 if len(overlapping) == 0:
                     output.append(intrvl1.copy())
+
+                # Special case where where intrvl1 has length 0
+                if intrvl1.length() == 0 and len(overlapping) is not 0:
+                    continue
                 
                 # Create a sorted list of all start to end points between
                 #   intrvl1.start and intrvl1.end, inclusive
