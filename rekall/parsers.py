@@ -48,3 +48,10 @@ def merge_dict_parsers(parser_fns):
     # { **obj1, **obj2 } merges the two dicts
     return lambda obj: reduce(lambda obj1, obj2: { **obj1, **obj2 },
             [fn(obj) for fn in parser_fns])
+
+def named_payload(name, parser_fn):
+    """
+    Generates a new parser function that wraps a payload result in a dictionary
+    under `name`.
+    """
+    return lambda obj: {name: parser_fn(obj)}

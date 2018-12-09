@@ -8,6 +8,7 @@ unary predicates):
         pred
     payload_staisfies_binary(pred) - True if the two interval's payloads
         satisfy pred
+To apply pred on a named payload, use payload_satisfies_*(on_name(name, pred))
 """
 
 def payload_satisfies(pred, arity=1):
@@ -17,3 +18,11 @@ def payload_satisfies(pred, arity=1):
         return lambda intrvl1, intrvl2: pred(intrvl1.payload, intrvl2.payload)
     else:
         panic('arity {} not supported.'.format(arity))
+
+def on_name(name, pred):
+    """
+    Wraps a predicate so that it can be applied to one value in a dict payload
+    """
+    def apply(*args):
+        return pred(*[arg[name] for arg in args])
+    return apply
