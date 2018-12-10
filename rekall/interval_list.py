@@ -209,12 +209,14 @@ class IntervalList:
         return IntervalList(self.fold(fold_fn, init_acc))
 
     # ============== FUNCTIONS THAT MODIFY SELF ==============
-    def coalesce(self, payload_merge_op=payload_first):
+    def coalesce(self, payload_merge_op=payload_first,
+            predicate=true_pred(arity=2)):
         """
         Recursively merge all overlapping or touching intervals.
 
-        If require_same_payload is True, then only merge intervals that have the same
-        payload.
+        Only merge a new interval in if the current interval and the new
+        interval satisfy predicate. Otherwise start a new sequence with the new
+        interval.
         """
         if len(self.intrvls) == 0:
             return self
@@ -224,7 +226,8 @@ class IntervalList:
             if cur is None:
                 cur = intrvl.copy()
                 continue
-            if intrvl.start >= cur.start and intrvl.start <= cur.end:
+            if (intrvl.start >= cur.start and intrvl.start <= cur.end and
+                    predicate(cur, intrvl)):
                 # intrvl overlaps with cur
                 cur.payload = payload_merge_op(cur.payload, intrvl.payload)
                 if intrvl.end > cur.end:
