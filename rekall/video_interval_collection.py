@@ -4,6 +4,7 @@ from rekall.temporal_predicates import *
 from rekall.logical_predicates import *
 from rekall.helpers import *
 from rekall.merge_ops import *
+from tqdm import tqdm
 
 class VideoIntervalCollection:
     """
@@ -24,7 +25,7 @@ class VideoIntervalCollection:
         }
 
     def from_iterable(iterable, accessor, video_id_field, schema,
-            with_payload=None):
+            with_payload=None, progress=False, total=None):
         """
         Construct a VideoIntervalCollection from an iterable collection.
 
@@ -46,6 +47,11 @@ class VideoIntervalCollection:
         iterable.
         """
         video_ids_to_intervals = {}
+        if progress:
+            if total is not None:
+                iterable = tqdm(iterable, total=total)
+            else:
+                iterable = tqdm(iterable)
         for row in iterable:
             new_tuple = (
                 accessor(row, schema["start"]),
@@ -65,7 +71,7 @@ class VideoIntervalCollection:
             return row[field]
 
     def from_spark_df(dataframe, video_id_field="video_id", schema=None,
-            with_payload=None):
+            with_payload=None, progress=False, total=None):
         """
         Constructor from a Spark dataframe.
         By default, the schema is 
@@ -84,13 +90,13 @@ class VideoIntervalCollection:
 
         return VideoIntervalCollection.from_iterable(dfmaterialized,
                 VideoIntervalCollection.spark_accessor, video_id_field, schema,
-                with_payload=with_payload)
+                with_payload=with_payload, progress=progress)
 
     def django_accessor(row, field):
         return attrgetter(field)(row)
 
     def from_django_qs(qs, video_id_field="video_id", schema=None,
-            with_payload=None):
+            with_payload=None, progress=False, total=None):
         """
         Constructor for a Django queryset.
         By default, the schema is 
@@ -107,7 +113,7 @@ class VideoIntervalCollection:
 
         return VideoIntervalCollection.from_iterable(qs,
                 VideoIntervalCollection.django_accessor, video_id_field,
-                schema, with_payload=with_payload)
+                schema, with_payload=with_payload, progress=progress)
 
     def _remove_empty_intervallists(intervals):
         return { video_id: intervals[video_id]
