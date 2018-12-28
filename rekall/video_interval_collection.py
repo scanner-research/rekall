@@ -47,12 +47,9 @@ class VideoIntervalCollection:
         iterable.
         """
         video_ids_to_intervals = {}
-        if progress:
-            if total is not None:
-                iterable = tqdm(iterable, total=total)
-            else:
-                iterable = tqdm(iterable)
-        for row in iterable:
+        for row in (tqdm(iterable, total=total)
+                if progress and total is not None else tqdm(iterable)
+                if progress else iterable):
             new_tuple = (
                 accessor(row, schema["start"]),
                 accessor(row, schema["end"]),
@@ -90,7 +87,7 @@ class VideoIntervalCollection:
 
         return VideoIntervalCollection.from_iterable(dfmaterialized,
                 VideoIntervalCollection.spark_accessor, video_id_field, schema,
-                with_payload=with_payload, progress=progress)
+                with_payload=with_payload, progress=progress, total=total)
 
     def django_accessor(row, field):
         return attrgetter(field)(row)
@@ -113,7 +110,7 @@ class VideoIntervalCollection:
 
         return VideoIntervalCollection.from_iterable(qs,
                 VideoIntervalCollection.django_accessor, video_id_field,
-                schema, with_payload=with_payload, progress=progress)
+                schema, with_payload=with_payload, progress=progress, total=total)
 
     def _remove_empty_intervallists(intervals):
         return { video_id: intervals[video_id]
