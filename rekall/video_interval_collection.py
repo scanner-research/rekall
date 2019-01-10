@@ -232,8 +232,11 @@ class VideoIntervalCollection:
                 VideoIntervalCollection._remove_empty_intervallists({
                     video_id : (
                         self.intervals[video_id].minus(
-                            other.intervals[video_id], predicate,
-                            working_window)
+                            other.intervals[video_id],
+                            recursive_diff = recursive_diff,
+                            predicate = predicate,
+                            payload_merge_op = payload_merge_op,
+                            working_window = working_window)
                         if video_id in other.intervals.keys()
                         else self.intervals[video_id]
                     )
