@@ -124,12 +124,14 @@ class VideoIntervalCollection:
         return self.intervals
 
     # ============== FUNCTIONS THAT MODIFY SELF ==============
-    def coalesce(self, payload_merge_op=payload_first):
+    def coalesce(self, payload_merge_op=payload_first,
+            predicate=true_pred(arity=2)):
         """ See IntervalList#coalesce for details. """
         return VideoIntervalCollection(
                 VideoIntervalCollection._remove_empty_intervallists({
                     video_id: self.intervals[video_id].coalesce(
-                        payload_merge_op)
+                        payload_merge_op=payload_merge_op,
+                        predicate=predicate)
                     for video_id in list(self.intervals.keys()) }))
 
     def dilate(self, window):
