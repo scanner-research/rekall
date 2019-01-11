@@ -117,6 +117,14 @@ class IntervalListTest(unittest.TestCase):
         self.assertEqual(intrvlscoalesced.intrvls[0].__repr__(),
                 "<Interval start:1.0 end:2.5 payload:1>")
 
+        intrvlscoalesced_samepayload = intrvls1.coalesce(
+            predicate=lambda i1, i2: i1.payload == i2.payload)
+        self.assertEqual(len(intrvlscoalesced_samepayload.intrvls), 2)
+        self.assertEqual(intrvlscoalesced_samepayload.intrvls[0].__repr__(),
+                "<Interval start:1.0 end:2.0 payload:1>")
+        self.assertEqual(intrvlscoalesced_samepayload.intrvls[1].__repr__(),
+                "<Interval start:1.5 end:2.5 payload:2>")
+
     def test_dilate(self):
         intrvl1 = Interval(1., 2., 1)
         intrvl2 = Interval(1.5, 2.5, 2)

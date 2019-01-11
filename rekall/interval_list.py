@@ -212,30 +212,43 @@ class IntervalList:
     def coalesce(self, payload_merge_op=payload_first,
             predicate=true_pred(arity=2)):
         """
-        Recursively merge all overlapping or touching intervals.
+        Recursively merge all overlapping or touching intervals that satisfy
+        predicate. predicate must be an equivalence relation over the intervals
+        (must be reflexive, symmetric, and transitive - all the properties of
+        a binary relationship that acts like equality in some way).
 
-        Only merge a new interval in if the current interval and the new
-        interval satisfy predicate. Otherwise start a new sequence with the new
-        interval.
         """
         if len(self.intrvls) == 0:
             return self
         new_intrvls = []
-        cur = None
+        current_intervals = []
         for intrvl in self.intrvls:
-            if cur is None:
-                cur = intrvl.copy()
+            for cur in current_intervals:
+                # Add any intervals that end before intrvl.start
+                if cur.end < intrvl.start:
+                    new_intrvls.append(cur)
+            current_intervals = [
+                cur
+                for cur in current_intervals
+                if cur.end >= intrvl.start
+            ]
+            if len(current_intervals) == 0:
+                current_intervals.append(intrvl.copy())
                 continue
-            if (intrvl.start >= cur.start and intrvl.start <= cur.end and
-                    predicate(cur, intrvl)):
-                # intrvl overlaps with cur
+            
+            matched_interval = None
+            for cur in current_intervals:
+                if predicate(cur, intrvl):
+                    matched_interval = cur
+                    break
+            if matched_interval is None:
+                current_intervals.append(intrvl)
+            else:
                 cur.payload = payload_merge_op(cur.payload, intrvl.payload)
                 if intrvl.end > cur.end:
                     cur.end = intrvl.end
-            else:
-                new_intrvls.append(cur)
-                cur = intrvl.copy()
-        if cur is not None:
+
+        for cur in current_intervals:
             new_intrvls.append(cur)
 
         return IntervalList(new_intrvls)
