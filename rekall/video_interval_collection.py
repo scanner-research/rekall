@@ -5,6 +5,8 @@ from rekall.logical_predicates import *
 from rekall.helpers import *
 from rekall.merge_ops import *
 from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor
+import cloudpickle
 
 class VideoIntervalCollection:
     """
@@ -71,7 +73,7 @@ class VideoIntervalCollection:
             with_payload=None, progress=False, total=None):
         """
         Constructor from a Spark dataframe.
-        By default, the schema is 
+        By default, the schema is
         {
             "start": "min_frame",
             "end": "max_frame",
@@ -96,7 +98,7 @@ class VideoIntervalCollection:
             with_payload=None, progress=False, total=None):
         """
         Constructor for a Django queryset.
-        By default, the schema is 
+        By default, the schema is
         {
             "start": "min_frame",
             "end": "max_frame",
@@ -134,23 +136,55 @@ class VideoIntervalCollection:
                         predicate=predicate)
                     for video_id in list(self.intervals.keys()) }))
 
-    def dilate(self, window):
+    def dilate(self, window, parallel=True):
         """ See IntervalList#dilate for details. """
-        return VideoIntervalCollection(
+        print('dilate')
+        if parallel:
+            res = self._process_run("dilate", [window])
+            return VideoIntervalCollection(
                 VideoIntervalCollection._remove_empty_intervallists({
-                    video_id: self.intervals[video_id].dilate(window)
-                    for video_id in list(self.intervals.keys()) }))
+                    video_id: r for (video_id, r) in zip(self.intervals.keys(), res)}))
+        else:
+            return VideoIntervalCollection(
+                    VideoIntervalCollection._remove_empty_intervallists({
+                        video_id: self.intervals[video_id].dilate(window)
+                        for video_id in tqdm(list(self.intervals.keys())) }))
 
-    def filter(self, fn):
+    def filter(self, fn, parallel=False):
         """ See IntervalList#filter for details. """
-        return VideoIntervalCollection(
+        print('filter')
+        if parallel:
+            res = self._process_run("filter", [fn])
+            return VideoIntervalCollection(
                 VideoIntervalCollection._remove_empty_intervallists({
-                    video_id: self.intervals[video_id].filter(fn)
-                    for video_id in list(self.intervals.keys()) }))
+                    video_id: r for (video_id, r) in zip(self.intervals.keys(), res)}))
+        else:
+            return VideoIntervalCollection(
+                    VideoIntervalCollection._remove_empty_intervallists({
+                        video_id: self.intervals[video_id].filter(fn)
+                        for video_id in tqdm(list(self.intervals.keys())) }))
 
-    def filter_length(self, min_length=0, max_length=INFTY):
+    def _dispatch(arg):
+        (intervals, method, args) = arg
+        return getattr(intervals, method)(*cloudpickle.loads(args))
+
+    def _process_run(self, method, args):
+        args = cloudpickle.dumps(args)
+        with ProcessPoolExecutor() as executor:
+            res = executor.map(
+                VideoIntervalCollection._dispatch,
+                [(self.intervals[video_id], method, args) for video_id in self.intervals.keys()])
+            return list(res)
+
+    def filter_length(self, min_length=0, max_length=INFTY, parallel=False):
         """ See IntervalList#filter_length for details. """
-        return VideoIntervalCollection(
+        if parallel:
+            res = self._process_run("filter_length", [min_length, max_length])
+            return VideoIntervalCollection(
+                VideoIntervalCollection._remove_empty_intervallists({
+                    video_id: r for (video_id, r) in zip(self.intervals.keys(), res)}))
+        else:
+            return VideoIntervalCollection(
                 VideoIntervalCollection._remove_empty_intervallists({
                     video_id: self.intervals[video_id].filter_length(
                         min_length, max_length)
@@ -163,20 +197,32 @@ class VideoIntervalCollection:
             video_id: self.intervals[video_id].map(map_fn)
             for video_id in list(self.intervals.keys()) })
 
-    def join(self, other, merge_op, predicate, working_window=None):
+    def join(self, other, merge_op, predicate, working_window=None, parallel=False):
         """
         Inner join on video ID between self and other, and then join the
         IntervalList's of self and other for the video ID.
         """
-        return VideoIntervalCollection(
-                VideoIntervalCollection._remove_empty_intervallists({
-                    video_id: self.intervals[video_id].join(
-                        other.intervals[video_id],
-                        merge_op,
-                        predicate,
-                        working_window)
-                    for video_id in list(self.intervals.keys())
-                    if video_id in other.intervals }))
+        if parallel:
+            with ProcessPoolExecutor() as executor:
+                res = executor.map(
+                    VideoIntervalCollection._dispatch,
+                    [(self.intervals[video_id], "merge", cloudpickle.dumps([other.intervals[video_id], merge_op, predicate, working_window]))
+                     for video_id in tqdm(self.intervals.keys())
+                     if video_id in list(other.intervals.keys())])
+                return VideoIntervalCollection(
+                    VideoIntervalCollection._remove_empty_intervallists({
+                        video_id: r for (video_id, r) in tqdm(zip(self.intervals.keys(), res))
+                        if video_id in list(other.intervals.keys())}))
+        else:
+            return VideoIntervalCollection(
+                        VideoIntervalCollection._remove_empty_intervallists({
+                            video_id: self.intervals[video_id].join(
+                                other.intervals[video_id],
+                                merge_op,
+                                predicate,
+                                working_window)
+                            for video_id in list(self.intervals.keys())
+                            if video_id in other.intervals }))
 
     def fold(self, fold_fn, init_acc):
         """
@@ -198,51 +244,90 @@ class VideoIntervalCollection:
                     for video_id in list(self.intervals.keys()) }))
 
     # ============== FUNCTIONS THAT JOIN WITH ANOTHER COLLECTION ==============
-    
-    def set_union(self, other):
+
+    def set_union(self, other, parallel=False):
         """ Full outer join on video ID's, union between self and other. """
         video_ids = set(self.intervals.keys()).union(
             set(other.intervals.keys()))
 
-        return VideoIntervalCollection({
-            video_id : (
-                self.intervals[video_id].set_union(other.intervals[video_id])
-                if (video_id in list(self.intervals.keys())
-                    and video_id in other.intervals)
-                else (self.intervals[video_id]
-                    if video_id in list(self.intervals.keys())
-                    else other.intervals[video_id])
-            )
-            for video_id in video_ids })
+        if parallel:
+            with ProcessPoolExecutor() as executor:
+                res = executor.map(
+                    VideoIntervalCollection._dispatch,
+                    [(self.intervals[video_id], "set_union", cloudpickle.dumps([other.intervals[video_id]]))
+                     for video_id in tqdm(self.intervals.keys())
+                     if video_id in list(other.intervals.keys())])
+                return VideoIntervalCollection(
+                    VideoIntervalCollection._remove_empty_intervallists({
+                        video_id: r for (video_id, r) in tqdm(zip(self.intervals.keys(), res))
+                        if video_id in list(other.intervals.keys())}))
+
+
+        else:
+            return VideoIntervalCollection({
+                video_id : (
+                    self.intervals[video_id].set_union(other.intervals[video_id])
+                    if (video_id in list(self.intervals.keys())
+                        and video_id in other.intervals)
+                    else (self.intervals[video_id]
+                        if video_id in list(self.intervals.keys())
+                        else other.intervals[video_id])
+                )
+                for video_id in video_ids })
 
     def filter_against(self, other, predicate=true_pred(arity=2),
-            working_window=None):
+            working_window=None, parallel=False):
         """
         Inner join on video ID's, computing IntervalList#filter_against.
         """
-        return VideoIntervalCollection(
-                VideoIntervalCollection._remove_empty_intervallists({
-                    video_id : self.intervals[video_id].filter_against(
-                        other.intervals[video_id], predicate, working_window)
-                    for video_id in list(self.intervals.keys())
-                    if video_id in list(other.intervals.keys()) }))
+        if parallel:
+            with ProcessPoolExecutor() as executor:
+                res = executor.map(
+                    VideoIntervalCollection._dispatch,
+                    [(self.intervals[video_id], "filter_against", cloudpickle.dumps([other.intervals[video_id], predicate, working_window]))
+                     for video_id in tqdm(self.intervals.keys())
+                     if video_id in list(other.intervals.keys())])
+                return VideoIntervalCollection(
+                    VideoIntervalCollection._remove_empty_intervallists({
+                        video_id: r for (video_id, r) in tqdm(zip(self.intervals.keys(), res))
+                        if video_id in list(other.intervals.keys())}))
+
+        else:
+            return VideoIntervalCollection(
+                    VideoIntervalCollection._remove_empty_intervallists({
+                        video_id : self.intervals[video_id].filter_against(
+                            other.intervals[video_id], predicate, working_window)
+                        for video_id in list(self.intervals.keys())
+                        if video_id in list(other.intervals.keys()) }))
 
     def minus(self, other, recursive_diff = True, predicate=true_pred(arity=2),
-            payload_merge_op=payload_first, working_window=None):
+            payload_merge_op=payload_first, working_window=None, parallel=True):
         """ Left outer join on video ID's, computing IntervalList#minus. """
-        return VideoIntervalCollection(
-                VideoIntervalCollection._remove_empty_intervallists({
-                    video_id : (
-                        self.intervals[video_id].minus(
-                            other.intervals[video_id],
-                            recursive_diff = recursive_diff,
-                            predicate = predicate,
-                            payload_merge_op = payload_merge_op,
-                            working_window = working_window)
-                        if video_id in other.intervals.keys()
-                        else self.intervals[video_id]
-                    )
-                    for video_id in list(self.intervals.keys()) }))
+        if parallel:
+            with ProcessPoolExecutor() as executor:
+                res = executor.map(
+                    VideoIntervalCollection._dispatch,
+                    [(self.intervals[video_id], "minus", cloudpickle.dumps([other.intervals[video_id], recursive_diff, predicate, payload_merge_op, working_window]))
+                     for video_id in tqdm(self.intervals.keys())
+                     if video_id in list(other.intervals.keys())])
+                return VideoIntervalCollection(
+                    VideoIntervalCollection._remove_empty_intervallists({
+                        video_id: r for (video_id, r) in tqdm(zip(self.intervals.keys(), res))
+                        if video_id in list(other.intervals.keys())}))
+        else:
+            return VideoIntervalCollection(
+                    VideoIntervalCollection._remove_empty_intervallists({
+                        video_id : (
+                            self.intervals[video_id].minus(
+                                other.intervals[video_id],
+                                recursive_diff = recursive_diff,
+                                predicate = predicate,
+                                payload_merge_op = payload_merge_op,
+                                working_window = working_window)
+                            if video_id in other.intervals.keys()
+                            else self.intervals[video_id]
+                        )
+                        for video_id in list(self.intervals.keys()) }))
 
     def overlaps(self, other, predicate = true_pred(arity=2), payload_merge_op =
             payload_first, working_window=None):
@@ -257,14 +342,25 @@ class VideoIntervalCollection:
                     if video_id in list(other.intervals.keys()) }))
 
     def merge(self, other, predicate = true_pred(arity=2), payload_merge_op =
-            payload_first, working_window=None):
+            payload_first, working_window=None, parallel=True):
         """ Inner join on video ID's, computing IntervalList#merge. """
-        return VideoIntervalCollection(
-                VideoIntervalCollection._remove_empty_intervallists({
-                    video_id: self.intervals[video_id].merge(
-                        other.intervals[video_id], predicate = predicate,
-                        payload_merge_op = payload_merge_op,
-                        working_window = working_window)
-                    for video_id in list(self.intervals.keys())
-                    if video_id in list(other.intervals.keys()) }))
-
+        if parallel:
+            with ProcessPoolExecutor() as executor:
+                res = executor.map(
+                    VideoIntervalCollection._dispatch,
+                    [(self.intervals[video_id], "merge", cloudpickle.dumps([other.intervals[video_id], predicate, payload_merge_op, working_window]))
+                     for video_id in tqdm(self.intervals.keys())
+                     if video_id in list(other.intervals.keys())])
+                return VideoIntervalCollection(
+                    VideoIntervalCollection._remove_empty_intervallists({
+                        video_id: r for (video_id, r) in tqdm(zip(self.intervals.keys(), res))
+                        if video_id in list(other.intervals.keys())}))
+        else:
+            return VideoIntervalCollection(
+                    VideoIntervalCollection._remove_empty_intervallists({
+                        video_id: self.intervals[video_id].merge(
+                            other.intervals[video_id], predicate = predicate,
+                            payload_merge_op = payload_merge_op,
+                            working_window = working_window)
+                        for video_id in list(self.intervals.keys())
+                        if video_id in list(other.intervals.keys()) }))
