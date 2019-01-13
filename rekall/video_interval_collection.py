@@ -213,7 +213,7 @@ class VideoIntervalCollection:
             with ProcessPoolExecutor() as executor:
                 res = executor.map(
                     VideoIntervalCollection._dispatch,
-                    [(self.intervals[video_id], "merge", cloudpickle.dumps([other.intervals[video_id], merge_op, predicate, working_window]))
+                    [(self.intervals[video_id], "join", cloudpickle.dumps([other.intervals[video_id], merge_op, predicate, working_window]))
                      for video_id in tqdm(self.intervals.keys())
                      if video_id in list(other.intervals.keys())])
                 return VideoIntervalCollection(
