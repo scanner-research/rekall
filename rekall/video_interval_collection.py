@@ -129,12 +129,19 @@ class VideoIntervalCollection:
     def coalesce(self, payload_merge_op=payload_first,
             predicate=true_pred(arity=2)):
         """ See IntervalList#coalesce for details. """
-        return VideoIntervalCollection(
+        print('dilate')
+        if parallel:
+            res = self._process_run("coalesce", [payload_merge_op, predicate])
+            return VideoIntervalCollection(
                 VideoIntervalCollection._remove_empty_intervallists({
-                    video_id: self.intervals[video_id].coalesce(
-                        payload_merge_op=payload_merge_op,
-                        predicate=predicate)
-                    for video_id in list(self.intervals.keys()) }))
+                    video_id: r for (video_id, r) in zip(self.intervals.keys(), res)}))
+        else:
+            return VideoIntervalCollection(
+                    VideoIntervalCollection._remove_empty_intervallists({
+                        video_id: self.intervals[video_id].coalesce(
+                            payload_merge_op=payload_merge_op,
+                            predicate=predicate)
+                        for video_id in list(self.intervals.keys()) }))
 
     def dilate(self, window, parallel=True):
         """ See IntervalList#dilate for details. """
