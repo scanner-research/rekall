@@ -166,10 +166,13 @@ def scene_graph(graph, region=None, exact=False):
             problem.addVariable(node['name'], candidates)
             variables.append(node['name'])
         problem.addConstraint(AllDifferentConstraint())
-        # Add edge constraints
+        # Add edge constraints.
+        # Note that `edge` needs to be explicitly passed into lambda since
+        # otherwise it captures `edge` by reference which changes value in
+        # the next loop iteration.
         for edge in graph['edges']:
-            problem.addConstraint(lambda bbox1, bbox2: _bboxes_satisfy_edge(
-                bbox_candidates[bbox1], bbox_candidates[bbox2], edge),
+            problem.addConstraint((lambda e: (lambda bbox1, bbox2: _bboxes_satisfy_edge(
+                bbox_candidates[bbox1], bbox_candidates[bbox2], e)))(edge),
                 (edge['start'], edge['end']))
 
         return problem.getSolution() is not None
