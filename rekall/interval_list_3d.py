@@ -246,7 +246,7 @@ class IntervalList3D:
             
             matched_interval = None
             for cur in current_intervals:
-                if overlaps_or_meets_3D(cur, intrvl) and predicate(cur, intrvl):
+                if overlaps_or_meets_3D()(cur, intrvl) and predicate(cur, intrvl):
                     matched_interval = cur
                     break
             if matched_interval is None:
@@ -280,3 +280,129 @@ class IntervalList3D:
     def minus(self, other, recursive_diff=True, predicate = true_pred(arity=2),
             payload_merge_op=payload_first, working_window=None):
         raise NotImplementedError
+
+    def experimental_minus_temporal_only(self, other, recursive_diff = True, predicate = true_pred(arity=2),
+            payload_merge_op = payload_first, working_window=None):
+        """
+        Calculate the difference between the temporal ranges in self and the temporal ranges
+        in other.
+
+        The difference between two intervals can produce up to two new intervals.
+        If recursive_diff is True, difference operations will recursively be
+        applied to the resulting intervals.
+        If recursive_diff is False, the results of each difference operation
+        between every valid pair of intervals in self and other will be emitted.
+
+        For example, suppose the following interval is in self:
+
+        |--------------------------------------------------------|
+
+        and that the following two intervals are in other:
+
+                  |--------------|     |----------------|
+        
+        If recursive_diff is True, this function will produce three intervals:
+
+        |---------|              |-----|                |--------|
+
+        If recursive_diff is False, this function will produce four intervals, some
+        of which are overlapping:
+
+        |---------|              |-------------------------------|
+        |------------------------------|                |--------|
+
+        Only computes differences for pairs that overlap and that satisfy
+        predicate.
+
+        If an interval in self overlaps no pairs in other such that the two
+        satisfy predicate, then the interval is reproduced in the output.
+
+        Labels the resulting intervals with payload_merge_op. For recursive_diff,
+        the intervals passed in to the payload producer function are the original
+        interval and the first interval that touches the output interval.
+        """
+        if not recursive_diff:
+            raise NotImplementedError
+        else:
+            if working_window == None:
+                working_window = self.working_window
+
+            start_index = 0
+            output = []
+            for intrvl1 in self.intrvls:
+                # For each interval in self.intrvls, get all the overlapping
+                #   intervals from other.intrvls
+                overlapping = []
+                new_start_index = None
+                for idx, intrvl2 in enumerate(other.intrvls[start_index:]):
+                    if new_start_index is None:
+                        if intrvl1.t1 < intrvl2.t1:
+                            new_start_index = idx
+                        elif intrvl1.t1 - working_window <= intrvl2.t2:
+                            new_start_index = idx
+                    if (T(overlaps())(intrvl1, intrvl2) and
+                        predicate(intrvl1, intrvl2)):
+                        overlapping.append(intrvl2)
+                if new_start_index is not None:
+                    start_index += new_start_index
+
+                if len(overlapping) == 0:
+                    output.append(intrvl1.copy())
+
+                # Special case where where intrvl1 has length 0
+                if intrvl1.length() == 0 and len(overlapping) is not 0:
+                    continue
+                
+                # Create a sorted list of all start to end points between
+                #   intrvl1.start and intrvl1.end, inclusive
+                endpoints_set = set([intrvl1.t1, intrvl1.t2])
+                for intrvl in overlapping:
+                    if intrvl.t1 > intrvl1.t1:
+                        endpoints_set.add(intrvl.t1)
+                    if intrvl.t2 < intrvl1.t2:
+                        endpoints_set.add(intrvl.t2)
+                endpoints_list = sorted(list(endpoints_set))
+
+                # Calculate longest subsequence endpoint pairs
+                longest_subsequences = []
+                last_j = -1
+                for i in range(len(endpoints_list)):
+                    if i <= last_j:
+                        continue
+                    start = endpoints_list[i]
+                    valid = True
+                    for intrvl in overlapping:
+                        if intrvl.t1 > start:
+                            break
+                        if intrvl.t1 < start and intrvl.t2 > start:
+                            valid = False
+                            break
+                    if not valid:
+                        continue
+                    max_j = len(endpoints_list) - 1
+                    for j in range(max_j, i, -1):
+                        end = endpoints_list[j]
+                        intrvl_candidate = Interval3D(start, end)
+                        valid = True
+                        for intrvl in overlapping:
+                            if intrvl.t1 > end:
+                                break
+                            if T(overlaps())(intrvl, intrvl_candidate):
+                                valid = False
+                                break
+                        if valid:
+                            longest_subsequences.append((start, end))
+                            last_j = j
+
+                # Figure out which intervals from overlapping to use to
+                # construct new intervals
+                for subsequence in longest_subsequences:
+                    start = subsequence[0]
+                    end = subsequence[1]
+                    for intrvl in overlapping:
+                        if intrvl.t2 == start or intrvl.t1 == end:
+                            payload = payload_merge_op(intrvl1.payload, intrvl.payload)
+                            output.append(Interval3D(start, end, intrvl1.x1, intrvl1.x2, intrvl1.y1, intrvl1.y2, payload))
+                            break
+
+            return IntervalList3D(output)
