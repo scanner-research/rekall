@@ -1,5 +1,5 @@
 from rekall.interval_list import Interval
-import rekall.interval_list_3d_utils as utils
+import rekall.interval_set_3d_utils as utils
 from rekall.temporal_predicates import *
 from rekall.logical_predicates import *
 from rekall.merge_ops import * 
