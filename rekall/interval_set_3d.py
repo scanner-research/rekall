@@ -125,10 +125,10 @@ class IntervalSet3D:
         else:
             return reduce(reducer, lst, init)
 
-    def _fold_with_other_within_time_window(self, other,
-            reducer, init, time_window=None):
+    def _map_with_other_within_time_window(self, other,
+            mapper, time_window=None):
         """
-        Fold over a list where elements are:
+        Map over a list where elements are:
             (interval_in_self, [intervals_in_other])
             where intervals_in_other are those in other that are within
             time_window of interval_in_self, and the list is ordered by
@@ -136,34 +136,38 @@ class IntervalSet3D:
         """
         if time_window is None:
             time_window = self._time_window
-        # State is (other_start_index, acc, done_flag)
-        state = (0, init, False)
+        dispatcher = utils.AsyncWorkDispatcher(mapper, self.size(),1)
+        # State is (other_start_index, dispatcher, done_flag)
+        state = (0, dispatcher, False)
         def update_state(state, intrvlself):
-            start_index, acc, done = state
-            intervals_in_other = []
-            if not done:
-                new_start_index = None
-                for idx, intrvlother in enumerate(
-                        other.get_intervals()[start_index:]):
-                    t1, t2 = intrvlself.t
-                    v1, v2 = intrvlother.t
-                    if t1 - time_window <= v2:
-                        if new_start_index is None:
-                            new_start_index = idx + start_index
-                        if v1 - time_window > t2:
-                            break
-                        intervals_in_other.append(intrvlother)
-                if new_start_index is None:
-                    done = True
-                else:
-                    start_index = new_start_index
-                acc = reducer(acc, (intrvlself, intervals_in_other))
-            else:
-                # No intervals in other are of interest to intrvlself
-                acc = reducer(acc, (intrvlself, []))
-            return start_index, acc, done
-        _, result, _ =  self.fold(update_state, state)
-        return result
+           start_index, dispatcher, done = state
+           intervals_in_other = []
+           if not done:
+               new_start_index = None
+               for idx, intrvlother in enumerate(
+                       other.get_intervals()[start_index:]):
+                   t1, t2 = intrvlself.t
+                   v1, v2 = intrvlother.t
+                   if t1 - time_window <= v2:
+                       if new_start_index is None:
+                           new_start_index = idx + start_index
+                       if v1 - time_window > t2:
+                           break
+                       intervals_in_other.append(intrvlother)
+               if new_start_index is None:
+                   done = True
+               else:
+                   start_index = new_start_index
+               dispatcher = dispatcher.add_work(
+                       (intrvlself, intervals_in_other))
+           else:
+               # No intervals in other are of interest to intrvlself
+               dispatcher = dispatcher.add_work((intrvlself, []))
+           return start_index, dispatcher, done
+        _, dispatcher, _ =  self.fold(update_state, state)
+        dispatcher.close()
+        return [r for results in dispatcher.get_all_outputs()
+                  for r in results]
 
     def join(self, other, predicate, merge_op, time_window=None):
         """
@@ -173,18 +177,16 @@ class IntervalSet3D:
         merge_op takes in two Intervals and returns a list of Intervals
         predicate takes in two Intervals and returns True or False
         """
-
-        def update_output(out, pair):
-            intrvlself, intervals_in_other  = pair
+        def map_output(intrvlself, intervals_in_other):
+            out = []
             for intrvlother in intervals_in_other:
                 if predicate(intrvlself, intrvlother):
                     new_intrvls = merge_op(intrvlself, intrvlother)
                     if len(new_intrvls) > 0:
                         out += new_intrvls
             return out
-        output = self._fold_with_other_within_time_window(
-                other, update_output, [], time_window) 
-        return IntervalSet3D(output)
+        return IntervalSet3D(self._map_with_other_within_time_window(
+            other, map_output, time_window))
 
     def filter(self, predicate):
         """
@@ -287,18 +289,16 @@ class IntervalSet3D:
                     overlapped_index = new_overlapped_index
             return output
         
-        def update_output(output, pair):
-            intrvl, overlapped = pair
+        def map_output(intrvl, overlapped):
             # Take only nontrivial overlaps
             to_subtract = [i for i in overlapped if i.length()>0]
             if len(to_subtract) == 0:
-                output.append(intrvl.copy())
+                return [intrvl.copy()]
             else:
-                output += compute_difference(intrvl, to_subtract)
-            return output
+                return compute_difference(intrvl, to_subtract)
 
-        return IntervalSet3D(self._fold_with_other_within_time_window(
-            other, update_output, [], 0))
+        return IntervalSet3D(self._map_with_other_within_time_window(
+            other, map_output, 0))
 
     def match(self, pattern, exact=False):
         """
@@ -384,15 +384,13 @@ class IntervalSet3D:
         Return intervals in self that satisify predicate with at least one
         interval in other.
         """
-        def update_output(output, pair):
-            intrvlself, intrvlothers = pair
+        def map_output(intrvlself, intrvlothers):
             for intrvlother in intrvlothers:
                 if predicate(intrvlself, intrvlother):
-                    output.append(intrvlself.copy())
-                    break
-            return output
-        return IntervalSet3D(self._fold_with_other_within_time_window(
-            other, update_output, [], time_window))
+                    return [intrvlself.copy()]
+            return []
+        return IntervalSet3D(self._map_with_other_within_time_window(
+            other, map_output, time_window))
 
     def map_payload(self, fn):
         def map_fn(intrvl):
@@ -488,19 +486,18 @@ class IntervalSet3D:
         If filter_empty, only keep intervals in self that have corresponding
             intervals in other.
         """
-        def update_output(output, pair):
-            intrvlself, intrvlothers = pair
+        def map_output(intrvlself, intrvlothers):
             intrvls_to_nest = IntervalSet3D([
                 i for i in intrvlothers if predicate(intrvlself, i)])
             if not intrvls_to_nest.empty() or not filter_empty:
-                output.append(Interval3D(
+                return [Interval3D(
                     intrvlself.t,
                     intrvlself.x,
                     intrvlself.y,
-                    payload=intrvls_to_nest))
-            return output
-        return IntervalSet3D(self._fold_with_other_within_time_window(
-            other, update_output, [], time_window))
+                    payload=intrvls_to_nest)]
+            return []
+        return IntervalSet3D(self._map_with_other_within_time_window(
+            other, map_output, time_window))
 
     def temporal_coalesce(self, payload_merge_op=payload_first, epsilon=0):
         """
