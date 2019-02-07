@@ -114,33 +114,56 @@ class IntervalSet3D:
         merge_op takes in two Intervals and returns a list of Intervals
         predicate takes in two Intervals and returns True or False
         """
-        if time_window == None:
-            time_window = self._time_window
-        output = []
-        start_index = 0
-        for intrvl in self.get_intervals():
-            new_start_index = None
-            for idx, intrvlother in enumerate(
-                    other.get_intervals()[start_index:]):
-                t1, t2 = intrvl.t
-                v1, v2 = intrvlother.t
-                if t1 - time_window <= v2:
-                    # All following intervals in self will start after t1
-                    if new_start_index is None:
-                        new_start_index = idx + start_index
-                    # All following intervals in other will start after v1
-                    if v1 - time_window > t2:
-                        break
-                    if predicate(intrvl, intrvlother):
-                        new_intrvls = merge_op(intrvl, intrvlother)
-                        if len(new_intrvls) > 0:
-                            output += new_intrvls
-            # All intervals left in other end too early to be in the receptive
-            # field of all following intervals in self.
-            if new_start_index is None:
-                break
-            start_index = new_start_index
+        def update_output(out, pair):
+            intrvlself, intervals_in_other  = pair
+            for intrvlother in intervals_in_other:
+                if predicate(intrvlself, intrvlother):
+                    new_intrvls = merge_op(intrvlself, intrvlother)
+                    if len(new_intrvls) > 0:
+                        out += new_intrvls
+            return out
+        output = self._fold_with_other_within_time_window(
+                other, update_output, [], time_window) 
         return IntervalSet3D(output)
+
+    def _fold_with_other_within_time_window(self, other,
+            reducer, init, time_window=None):
+        """
+        Fold over a list where elements are:
+            (interval_in_self, [intervals_in_other])
+            where intervals_in_other are those in other that are within
+            time_window of interval_in_self, and the list is ordered by (t1,t2)
+        """
+        if time_window is None:
+            time_window = self._time_window
+        # State is (other_start_index, acc, done_flag)
+        state = (0, init, False)
+        def update_state(state, intrvlself):
+            start_index, acc, done = state
+            intervals_in_other = []
+            if not done:
+                new_start_index = None
+                for idx, intrvlother in enumerate(
+                        other.get_intervals()[start_index:]):
+                    t1, t2 = intrvlself.t
+                    v1, v2 = intrvlother.t
+                    if t1 - time_window <= v2:
+                        if new_start_index is None:
+                            new_start_index = idx + start_index
+                        if v1 - time_window > t2:
+                            break
+                        intervals_in_other.append(intrvlother)
+                acc = reducer(acc, (intrvlself, intervals_in_other))
+                if new_start_index is None:
+                    done = True
+                else:
+                    start_index = new_start_index
+            else:
+                # No intervals in other are of interest to intrvlself
+                acc = reducer(acc, (intrvlself, []))
+            return start_index, acc, done
+        _, result, _ =  self.fold(update_state, state)
+        return result
 
     def filter(self, predicate):
         """
@@ -210,74 +233,62 @@ class IntervalSet3D:
         for intrvl in other.get_intervals():
             if intrvl.x != (0,1) or intrvl.y != (0,1):
                 raise NotImplementedError
-        output = []
-        start_index = 0
-        for intrvl in self.get_intervals():
-            new_start_index = None
-            overlapped = []
-            for idx, otherintrvl in enumerate(
-                    other.get_intervals()[start_index:]):
-                t1, t2 = intrvl.t
-                v1, v2 = otherintrvl.t
-                if v2 >= t1:
-                    # All following intervals in self will start after t1
-                    if new_start_index is None:
-                        new_start_index = idx + start_index
-                    # All following intervals in other will start after v1
-                    if v1 > t2:
+        # Returns a list of intervals that are what is left of intrvl after
+        # subtracting all overlapped_intervals.
+        def compute_difference(intrvl, overlapped_intervals):
+            start = intrvl.t[0]
+            overlapped_index = 0
+            output = []
+            while start < intrvl.t[1]:
+                # Each iteration proposes an interval starting at `start`
+                # If no overlapped interval goes acoss `start`, then it is
+                # a valid start for an interval after the subtraction.
+                intervals_across_start = []
+                first_interval_after_start = None
+                new_overlapped_index = None
+                for idx,overlap in enumerate(
+                        overlapped_intervals[overlapped_index:]):
+                    v1, v2 = overlap.t
+                    if new_overlapped_index is None and v2 > start:
+                        new_overlapped_index = idx + overlapped_index
+                    if v1 <= start and v2 > start:
+                        intervals_across_start.append(overlap)
+                    elif v1 > start:
+                        # overlap is sorted by (t1,t2)
+                        first_interval_after_start = overlap
                         break
-                    overlapped.append(otherintrvl)
-            if new_start_index is None:
-                output.append(intrvl.copy())
-                start_index = len(other.get_intervals())
-                continue
-            else:
-                start_index = new_start_index
-                if len(overlapped)==0:
-                    output.append(intrvl.copy())
-                    continue
-                # Take only nontrivial overlaps
-                overlapped = [i for i in overlapped if i.length() > 0]
-                
-                start = intrvl.t[0]
-                overlapped_index = 0
-                while start < intrvl.t[1]:
-                    # Each iteration proposes an interval starting at `start`
-                    # If no overlapped interval goes acoss `start`, then it is
-                    # a valid start for an interval after the subtraction.
-                    intervals_across_start = []
-                    first_interval_after_start = None
-                    new_overlapped_index = None
-                    for idx,overlap in enumerate(
-                            overlapped[overlapped_index:]):
-                        v1, v2 = overlap.t
-                        if new_overlapped_index is None and v2 > start:
-                            new_overlapped_index = idx + overlapped_index
-                        if v1 <= start and v2 > start:
-                            intervals_across_start.append(overlap)
-                        elif v1 > start:
-                            # overlap is sorted by (t1,t2)
-                            first_interval_after_start = overlap
-                            break
-                    if len(intervals_across_start) == 0:
-                        # start is valid, now finds an end point
-                        if first_interval_after_start is None:
-                            end = intrvl.t[1]
-                            new_start = end
-                        else:
-                            end = first_interval_after_start.t[0]
-                            new_start = first_interval_after_start.t[1]
-                        if end > start:
-                            output.append(Interval3D(
-                                (start, end), intrvl.x, intrvl.y,
-                                intrvl.payload))
-                        start = new_start
+                if len(intervals_across_start) == 0:
+                    # start is valid, now finds an end point
+                    if first_interval_after_start is None:
+                        end = intrvl.t[1]
+                        new_start = end
                     else:
-                        # start is invalid, now propose another start
-                        start = max([i.t[1] for i in intervals_across_start])
-                    if new_overlapped_index is not None:
-                        overlapped_index = new_overlapped_index
-        return IntervalSet3D(output)
+                        end = first_interval_after_start.t[0]
+                        new_start = first_interval_after_start.t[1]
+                    if end > start:
+                        output.append(Interval3D(
+                            (start, end), intrvl.x, intrvl.y,
+                            intrvl.payload))
+                    start = new_start
+                else:
+                    # start is invalid, now propose another start
+                    start = max([i.t[1] for i in intervals_across_start])
+                if new_overlapped_index is not None:
+                    overlapped_index = new_overlapped_index
+            return output
+        
+        def update_output(output, pair):
+            intrvl, overlapped = pair
+            # Take only nontrivial overlaps
+            to_subtract = [i for i in overlapped if i.length()>0]
+            if len(to_subtract) == 0:
+                output.append(intrvl.copy())
+            else:
+                output += compute_difference(intrvl, to_subtract)
+            return output
+
+        return IntervalSet3D(self._fold_with_other_within_time_window(
+            other, update_output, [], 0))
 
     def match(self, pattern, exact=False):
         """
