@@ -117,7 +117,9 @@ class IntervalSet3D:
         Perform fold with given reducer and init on the list of intervals
         ordered by sort_key
         """
-        lst = sorted(self.get_intervals(), key=sort_key)
+        lst = self.get_intervals()
+        if sort_key != utils.sort_key_time_x_y:
+            lst = sorted(lst, key=sort_key)
         if init is None:
             return reduce(reducer, lst)
         else:
@@ -171,6 +173,7 @@ class IntervalSet3D:
         merge_op takes in two Intervals and returns a list of Intervals
         predicate takes in two Intervals and returns True or False
         """
+
         def update_output(out, pair):
             intrvlself, intervals_in_other  = pair
             for intrvlother in intervals_in_other:

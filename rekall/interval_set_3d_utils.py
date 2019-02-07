@@ -32,7 +32,7 @@ def X(pred):
         ])
     return new_pred
 # Apply a predicate on y dimension in Interval3D(s)
-def X(pred):
+def Y(pred):
     def new_pred(*interval_3ds):
         return pred(*[
             Interval(i.y[0], i.y[1], i.payload) for i in interval_3ds
