@@ -24,8 +24,8 @@ class Interval3D:
                 self.y[0], self.y[1], self.payload)
 
     def copy(self):
-        return Interval3D(self.t1, self.t2, self.x1, self.x2,
-                self.y1, self.y2, self.payload)
+        return Interval3D(self.t, self.x,
+                self.y, self.payload)
 
     # Returns another interval that is a combination of self and other
     def combine(self, other, t_combiner, x_combiner, y_combiner,
@@ -106,7 +106,7 @@ class IntervalSet3D:
     def union(self, other):
         return IntervalSet3D(self._intrvls + other._intrvls)
 
-    def join(self, other, merge_op, predicate, time_window=None):
+    def join(self, other, predicate, merge_op, time_window=None):
         """
         Joins intervals in self with those in other on predicate and produces
         new Intervals based on merge_op.
@@ -147,17 +147,19 @@ class IntervalSet3D:
         Filter every interval by predicate.
         """
         return IntervalSet3D([
-            intrvl.copy() for intrvl in self.intrvls if fn(intrvl)])
+            intrvl.copy() for intrvl in self.get_intervals() if 
+            predicate(intrvl)])
 
-    def fold(self, reducer, init, sort_key=utils.sort_key_time_x_y):
+    def fold(self, reducer, init=None, sort_key=utils.sort_key_time_x_y):
         """
         Perform fold with given reducer and init on the list of intervals
         ordered by sort_key
         """
-        return reduce(
-                reducer,
-                sorted(self.get_intervals, key=sort_key),
-                init)
+        lst = sorted(self.get_intervals(), key=sort_key)
+        if init is None:
+            return reduce(reducer, lst)
+        else:
+            return reduce(reducer, lst, init)
 
     def group_by(self, key, merge):
         """
@@ -225,7 +227,7 @@ class IntervalSet3D:
                     if v1 > t2:
                         break
                     overlapped.append(otherintrvl)
-            if new_start_index is None
+            if new_start_index is None:
                 output.append(intrvl.copy())
                 start_index = len(other.get_intervals())
                 continue
@@ -256,6 +258,7 @@ class IntervalSet3D:
                         elif v1 > start:
                             # overlap is sorted by (t1,t2)
                             first_interval_after_start = overlap
+                            break
                     if len(intervals_across_start) == 0:
                         # start is valid, now finds an end point
                         if first_interval_after_start is None:
@@ -274,6 +277,7 @@ class IntervalSet3D:
                         start = max([i.t[1] for i in intervals_across_start])
                     if new_overlapped_index is not None:
                         overlapped_index = new_overlapped_index
+        return IntervalSet3D(output)
 
     def match(self, pattern, exact=False):
         """
@@ -309,7 +313,7 @@ class IntervalSet3D:
             return pred
 
         prob = constraint.Problem()
-        for name, predicates in nodes:
+        for name, predicates in nodes.items():
             # Pre-compute single variable constraints
             candidates = [i for i, intrvl in enumerate(intervals)
                     if satisfies_all(predicates, [intrvl])]
@@ -321,7 +325,7 @@ class IntervalSet3D:
         for names, predicates in constraints:
             prob.addConstraint(wrap_preds(predicates, intervals), names)
 
-        solutions = prob.getSolution()
+        solutions = prob.getSolutions()
         if solutions is None:
             return []
         ret = []

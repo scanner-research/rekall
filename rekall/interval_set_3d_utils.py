@@ -39,7 +39,7 @@ def X(pred):
         ])
     return new_pred
 
-def _interval_3d_to_bbox(i):
+def _interval_3d_to_bbox(intrvl):
     return {'x1':intrvl.x[0], 'x2':intrvl.x[1],
             'y1':intrvl.y[0], 'y2':intrvl.y[1],
             'payload': intrvl.payload
