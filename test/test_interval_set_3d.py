@@ -1,7 +1,9 @@
 from rekall.interval_set_3d import Interval3D, IntervalSet3D
 import rekall.interval_set_3d_utils as utils
 from rekall.merge_ops import payload_plus, payload_second
-from rekall.temporal_predicates import overlaps, before, meets_before, equal
+from rekall.temporal_predicates import (overlaps, before, meets_before, equal,
+    during_inv)
+    
 from rekall.bbox_predicates import left_of, above, height_at_least
 import unittest
 from operator import eq
@@ -74,6 +76,13 @@ class TestIntervalSet3D(unittest.TestCase):
         self.assertFalse(len(list1)>len(list2),
                 "1st IntervalSet has more intervals {0}".format(
                     list1[len(list2):]))
+
+    def compare_interval_sets_in_payload(self):
+        def payload_cmp(set1, set2):
+            # Will throw if not equal
+            self.assertIntervalSetEq(set1, set2)
+            return True
+        return payload_cmp
 
     def test_map(self):
         is1 = IntervalSet3D([
@@ -202,11 +211,8 @@ class TestIntervalSet3D(unittest.TestCase):
                 Interval3D((0,2)),
                 Interval3D((1,2)),])),
             ])
-        def payload_cmp(set1, set2):
-            # Will throw if not equal
-            self.assertIntervalSetEq(set1, set2)
-            return True
-        self.assertIntervalSetEq(is2, target, payload_cmp)
+        self.assertIntervalSetEq(is2, target,
+                self.compare_interval_sets_in_payload())
 
     def test_minus(self):
         is1 = IntervalSet3D([
@@ -438,6 +444,98 @@ class TestIntervalSet3D(unittest.TestCase):
         is4 = is1.filter_size(min_size=0.3, max_size=0.5, axis='X')
         self.assertIntervalSetEq(is3, IntervalSet3D([
             Interval3D((1,2),(0.5,0.9),(0.1,0.2))]))
+
+    def test_merge(self):
+        is1 = IntervalSet3D([
+            Interval3D((1,10),(0.8,0.9),(0,0.1)),
+            Interval3D((20,30),(0.1,0.2),(0.9,1)),
+            ])
+        is2 = IntervalSet3D([
+            Interval3D((11,15),(0.4,0.5),(0.8,0.9)),
+            Interval3D((35,36),(0,1),(0,1)),
+            ])
+        is3 = is1.merge(is2, utils.T(meets_before(epsilon=1)))
+        target = IntervalSet3D([
+            Interval3D((1,15),(0.4,0.9),(0,0.9)),
+            ])
+        self.assertIntervalSetEq(is3, target)
+
+    def test_group_by_time(self):
+        intervals_1 = [
+            Interval3D((1,1), (0.4,0.5),(0.6,0.8), 1),
+            Interval3D((1,1), (0.1,0.2),(0.2,0.3), 2),
+            Interval3D((1,1), (0.3,0.5),(0.1,0.5), 3),
+        ]
+        intervals_2 = [
+            Interval3D((2,2), (0.3,0.5),(0.6,0.8), 11),
+            Interval3D((2,2), (0.2,0.3),(0.2,0.9), 12),
+            Interval3D((2,2), (0.3,0.7),(0,0.5), 13),
+        ]
+        is1 = IntervalSet3D(intervals_1+intervals_2)
+        target = IntervalSet3D([
+            Interval3D((1,1), payload=IntervalSet3D(intervals_1)),
+            Interval3D((2,2), payload=IntervalSet3D(intervals_2)),
+            ])
+        self.assertIntervalSetEq(is1.group_by_time(), target,
+                self.compare_interval_sets_in_payload())
+
+    def test_collect_by_interval(self):
+        is1 = IntervalSet3D([
+            Interval3D((1,5)),
+            Interval3D((10,50)),
+            Interval3D((51,52)),
+            ])
+        intervals = [
+            Interval3D((2,2), (0.4,0.6),(0.1,0.2), 1),
+            Interval3D((3,3), (0.1,0.6),(0.8,0.9), 2),
+            Interval3D((11,23), (0,1),(0.8,0.9), 3),
+            ]
+        is2 = IntervalSet3D(intervals)
+
+        is3 = is1.collect_by_interval(is2, utils.T(during_inv()),
+                filter_empty=True, time_window=None)
+        target = IntervalSet3D([
+            Interval3D((1,5), payload=IntervalSet3D(intervals[:2])),
+            Interval3D((10,50), payload=IntervalSet3D(intervals[2:3])),
+            ])
+        self.assertIntervalSetEq(is3, target,
+                self.compare_interval_sets_in_payload())
+
+        is4 = is1.collect_by_interval(is2, utils.T(overlaps()),
+                filter_empty=False, time_window=0)
+        target = IntervalSet3D([
+            Interval3D((1,5), payload=IntervalSet3D(intervals[:2])),
+            Interval3D((10,50), payload=IntervalSet3D(intervals[2:3])),
+            Interval3D((51,52), payload=IntervalSet3D([])),
+            ])
+        self.assertIntervalSetEq(is4, target,
+                self.compare_interval_sets_in_payload())
+
+    def test_temporal_coalesce(self):
+        is1 = IntervalSet3D([
+            Interval3D((1,10),(0.3,0.4),(0.5,0.6),1),
+            Interval3D((2,5),(0.2,0.8),(0.2,0.3),1),
+            Interval3D((10,11),(0.2,0.7),(0.3,0.5),1),
+            Interval3D((13,15),(0.5,1),(0,0.5),1),
+            Interval3D((15,19),(0.5,1),(0,0.5),1),
+            Interval3D((20,20),payload=1),
+            Interval3D((22,22),payload=1),
+            Interval3D((22,23),payload=1),
+            ])
+        target = IntervalSet3D([
+            Interval3D((1,11),(0.2,0.8),(0.2,0.6),3),
+            Interval3D((13,19),(0.5,1),(0,0.5),2),
+            Interval3D((20,20),payload=1),
+            Interval3D((22,23),payload=2),
+            ])
+        self.assertIntervalSetEq(is1.temporal_coalesce(payload_plus), target)
+        self.assertIntervalSetEq(
+                is1.temporal_coalesce(payload_plus, epsilon=2),
+                IntervalSet3D([Interval3D((1,23),payload=8)]))
+
+
+
+
 
 
 

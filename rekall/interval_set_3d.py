@@ -97,6 +97,12 @@ class IntervalSet3D:
     def get_intervals(self):
         return self._intrvls
 
+    def size(self):
+        return len(self._intrvls)
+
+    def empty(self):
+        return self.size() == 0
+
     def map(self, map_fn):
         """
         map_fn takes an Interval3D and returns an Interval3D
@@ -425,4 +431,69 @@ class IntervalSet3D:
         IntervalSet3D._check_axis_value(axis)
         return self.filter(get_pred(min_size, max_size, axis))
 
+    def merge(self, other, predicate, payload_merge_op=payload_first,
+            time_window=None):
+        """
+        Merges pairs of intervals in self and other that satisfy predicate.
+
+        Only processes pairs that satisfy predicate.
+        """
+        def merge_op(i1, i2):
+            return [i1.merge(i2, payload_merge_op)]
+        return self.join(other, predicate, merge_op, time_window)
+
+    def group_by_time(self):
+        """
+        Group intervals by the time span.
+            Nest each group under a new interval with the common time span
+            and full spatial span.
+        """
+        def key_fn(intrvl):
+            return intrvl.t
+        def merge_fn(key, intervals):
+            return Interval3D(key,
+                    payload=intervals)
+        return self.group_by(key_fn, merge_fn)
+
+    def collect_by_interval(self, other, predicate,
+            filter_empty=True,time_window=None):
+        """
+        For each interval in self, nest under it all intervals in other
+            that satisfy the predicate and are within time_window
+        If filter_empty, only keep intervals in self that have corresponding
+            intervals in other.
+        """
+        def update_output(output, pair):
+            intrvlself, intrvlothers = pair
+            intrvls_to_nest = IntervalSet3D([
+                i for i in intrvlothers if predicate(intrvlself, i)])
+            if not intrvls_to_nest.empty() or not filter_empty:
+                output.append(Interval3D(
+                    intrvlself.t,
+                    intrvlself.x,
+                    intrvlself.y,
+                    payload=intrvls_to_nest))
+            return output
+        return IntervalSet3D(self._fold_with_other_within_time_window(
+            other, update_output, [], time_window))
+
+    def temporal_coalesce(self, payload_merge_op=payload_first, epsilon=0):
+        """
+        Recursively merge all temporally overlapping or touching intervals,
+            or intervals that are up to epsilon apart.
+        """
+        def update_output(output, intrvl):
+            if len(output)==0:
+                output.append(intrvl)
+            else:
+                merge_candidate = output[-1]
+                if utils.T(utils.or_preds(
+                    overlaps(),
+                    before(max_dist=epsilon)))(merge_candidate, intrvl):
+                    output[-1] = merge_candidate.merge(
+                            intrvl, payload_merge_op)
+                else:
+                    output.append(intrvl)
+            return output
+        return IntervalSet3D(self.fold(update_output, []))
 
