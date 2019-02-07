@@ -53,6 +53,28 @@ def XY(pred):
         ])
     return new_pred
 
+# Adapters for logical combinations of predicates
+def not_pred(pred):
+    def new_pred(*args):
+        return not pred(*args)
+    return new_pred
+
+def and_preds(*preds):
+    def new_pred(*args):
+        for pred in preds:
+            if not pred(*args):
+                return False
+        return True
+    return new_pred
+
+def or_preds(*preds):
+    def new_pred(*args):
+        for pred in preds:
+            if pred(*args):
+                return True
+        return False
+    return new_pred
+
 # Parser for pattern matching
 # pattern: list of (names, constraints)
 # Returns:

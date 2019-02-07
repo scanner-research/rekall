@@ -106,25 +106,16 @@ class IntervalSet3D:
     def union(self, other):
         return IntervalSet3D(self._intrvls + other._intrvls)
 
-    def join(self, other, predicate, merge_op, time_window=None):
+    def fold(self, reducer, init=None, sort_key=utils.sort_key_time_x_y):
         """
-        Joins intervals in self with those in other on predicate and produces
-        new Intervals based on merge_op.
-
-        merge_op takes in two Intervals and returns a list of Intervals
-        predicate takes in two Intervals and returns True or False
+        Perform fold with given reducer and init on the list of intervals
+        ordered by sort_key
         """
-        def update_output(out, pair):
-            intrvlself, intervals_in_other  = pair
-            for intrvlother in intervals_in_other:
-                if predicate(intrvlself, intrvlother):
-                    new_intrvls = merge_op(intrvlself, intrvlother)
-                    if len(new_intrvls) > 0:
-                        out += new_intrvls
-            return out
-        output = self._fold_with_other_within_time_window(
-                other, update_output, [], time_window) 
-        return IntervalSet3D(output)
+        lst = sorted(self.get_intervals(), key=sort_key)
+        if init is None:
+            return reduce(reducer, lst)
+        else:
+            return reduce(reducer, lst, init)
 
     def _fold_with_other_within_time_window(self, other,
             reducer, init, time_window=None):
@@ -132,7 +123,8 @@ class IntervalSet3D:
         Fold over a list where elements are:
             (interval_in_self, [intervals_in_other])
             where intervals_in_other are those in other that are within
-            time_window of interval_in_self, and the list is ordered by (t1,t2)
+            time_window of interval_in_self, and the list is ordered by
+            (t1,t2) of interval_in_self
         """
         if time_window is None:
             time_window = self._time_window
@@ -153,17 +145,37 @@ class IntervalSet3D:
                         if v1 - time_window > t2:
                             break
                         intervals_in_other.append(intrvlother)
-                acc = reducer(acc, (intrvlself, intervals_in_other))
                 if new_start_index is None:
                     done = True
                 else:
                     start_index = new_start_index
+                acc = reducer(acc, (intrvlself, intervals_in_other))
             else:
                 # No intervals in other are of interest to intrvlself
                 acc = reducer(acc, (intrvlself, []))
             return start_index, acc, done
         _, result, _ =  self.fold(update_state, state)
         return result
+
+    def join(self, other, predicate, merge_op, time_window=None):
+        """
+        Joins intervals in self with those in other on predicate and produces
+        new Intervals based on merge_op.
+
+        merge_op takes in two Intervals and returns a list of Intervals
+        predicate takes in two Intervals and returns True or False
+        """
+        def update_output(out, pair):
+            intrvlself, intervals_in_other  = pair
+            for intrvlother in intervals_in_other:
+                if predicate(intrvlself, intrvlother):
+                    new_intrvls = merge_op(intrvlself, intrvlother)
+                    if len(new_intrvls) > 0:
+                        out += new_intrvls
+            return out
+        output = self._fold_with_other_within_time_window(
+                other, update_output, [], time_window) 
+        return IntervalSet3D(output)
 
     def filter(self, predicate):
         """
@@ -172,17 +184,6 @@ class IntervalSet3D:
         return IntervalSet3D([
             intrvl.copy() for intrvl in self.get_intervals() if 
             predicate(intrvl)])
-
-    def fold(self, reducer, init=None, sort_key=utils.sort_key_time_x_y):
-        """
-        Perform fold with given reducer and init on the list of intervals
-        ordered by sort_key
-        """
-        lst = sorted(self.get_intervals(), key=sort_key)
-        if init is None:
-            return reduce(reducer, lst)
-        else:
-            return reduce(reducer, lst, init)
 
     def group_by(self, key, merge):
         """
@@ -346,4 +347,82 @@ class IntervalSet3D:
                 d[key] = intervals[idx]
             ret.append(d)
         return ret
+
+    def filter_against(self, other, predicate, time_window=None):
+        """
+        Return intervals in self that satisify predicate with at least one
+        interval in other.
+        """
+        def update_output(output, pair):
+            intrvlself, intrvlothers = pair
+            for intrvlother in intrvlothers:
+                if predicate(intrvlself, intrvlother):
+                    output.append(intrvlself.copy())
+                    break
+            return output
+        return IntervalSet3D(self._fold_with_other_within_time_window(
+            other, update_output, [], time_window))
+
+    def map_payload(self, fn):
+        def map_fn(intrvl):
+            return Interval3D(intrvl.t,
+                    intrvl.x, intrvl.y,
+                    fn(intrvl.payload))
+        return self.map(map_fn)
+    
+    @staticmethod
+    def _check_axis_value(axis):
+        if axis not in {'T','X','Y'}:
+            raise ValueError("axis must be one of 'T', 'X', 'Y'")
+
+    def dilate(self, window, axis='T'):
+        """
+        Expand every interval along specified axis in both directions by
+          amount of `window`.
+        axis: one of 'T','X','Y'
+        """
+        IntervalSet3D._check_axis_value(axis)
+        def get_map_fn(window, axis):
+            def dilate_bound(b):
+                return (b[0]-window, b[1]+window)
+            def dilate_t(i):
+                return Interval3D(
+                        dilate_bound(i.t),
+                        i.x, i.y, i.payload)
+            def dilate_x(i):
+                return Interval3D(i.t, 
+                        dilate_bound(i.x),
+                        i.y, i.payload)
+            def dilate_y(i):
+                return Interval3D(i.t, i.x,
+                        dilate_bound(i.y),
+                        i.payload)
+            if axis == 'T':
+                return dilate_t
+            if axis == 'X':
+                return dilate_x
+            if axis == 'Y':
+                return dilate_y
+            raise RuntimeError("Axis not in ['T','X','Y']")
+        return self.map(get_map_fn(window, axis))
+
+    def filter_size(self, min_size=0, max_size=INFTY, axis='T'):
+        def getter(axis):
+            if axis=='T':
+                return Interval3D.length
+            if axis=='X':
+                return Interval3D.width
+            if axis=='Y':
+                return Interval3D.height
+            raise RuntimeError("Axis not in ['T','X','Y']")
+        def get_pred(min_size, max_size, axis):
+            func = getter(axis)
+            def pred(intrvl):
+                val = func(intrvl)
+                return val >= min_size and (
+                       max_size==INFTY or val<=max_size)
+            return pred
+        IntervalSet3D._check_axis_value(axis)
+        return self.filter(get_pred(min_size, max_size, axis))
+
 

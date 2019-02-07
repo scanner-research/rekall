@@ -16,8 +16,8 @@ class TestInterval3D(unittest.TestCase):
                    float_equal(b1[1], b2[1]))
             
         return (i1.t==i2.t and bound_almost_eq(i1.x, i2.x) and 
-                bound_almost_eq(i1.y,i2.y) and 
-                payload_cmp is None or payload_cmp(i1.payload,i2.payload))
+                bound_almost_eq(i1.y,i2.y) and (
+                payload_cmp is None or payload_cmp(i1.payload,i2.payload)))
 
     def assertIntervalEq(self, i1, i2, payload_cmp=None):
         self.assertTrue(TestInterval3D.intervalsEq(i1,i2,payload_cmp),
@@ -372,14 +372,74 @@ class TestIntervalSet3D(unittest.TestCase):
         self.assertTrue(TestInterval3D.intervalsEq(
             right_box_frame_1, result['right']))
 
+    def test_filter_against(self):
+        is1 = IntervalSet3D([
+            Interval3D((0,1)),
+            Interval3D((2,5)),
+            Interval3D((6,7)),
+            ])
+        is2 = IntervalSet3D([
+            Interval3D((1,1)),
+            Interval3D((7,7)),
+            ])
+        # Take only intervals in is1 that overlaps with some interval in is2
+        is3 = is1.filter_against(is2, utils.T(overlaps()),
+                time_window=0)
+        self.assertIntervalSetEq(is3,
+                IntervalSet3D([Interval3D((0,1)),Interval3D((6,7))]))
+
+    def test_map_payload(self):
+        is1 = IntervalSet3D([
+            Interval3D((0,1),payload=1),
+            Interval3D((2,3),payload=2),
+            Interval3D((4,5),payload=3),
+            ])
+        is2 = is1.map_payload(lambda p: p+10)
+        target = IntervalSet3D([
+            Interval3D((0,1),payload=11),
+            Interval3D((2,3),payload=12),
+            Interval3D((4,5),payload=13),
+            ])
+        self.assertIntervalSetEq(is2, target)
+
+    def test_dilate(self):
+        is1 = IntervalSet3D([
+            Interval3D((2,5)),
+            Interval3D((6,7)),
+        ])
+        is2 = is1.dilate(1)
+        target = IntervalSet3D([
+            Interval3D((1,6)),
+            Interval3D((5,8)),
+        ])
+        self.assertIntervalSetEq(is2, target)
+        self.assertIntervalSetEq(is2.dilate(-1), is1)
+        is3 = is1.dilate(-0.1, axis='X')
+        target = IntervalSet3D([
+            Interval3D((2,5),(0.1, 0.9),(0,1)),
+            Interval3D((6,7),(0.1, 0.9),(0,1)),
+            ])
+        self.assertIntervalSetEq(is3, target)
+
+    def test_filter_size(self):
+        is1 = IntervalSet3D([
+            Interval3D((1,2),(0.5,0.9),(0.1,0.2)),
+            Interval3D((20,30),(0.4,1.0), (0,1)),
+            Interval3D((50,55),(0.2,0.3), (0.5,0.9)),
+            ])
+        is2 = is1.filter_size(min_size=10, axis='T')
+        self.assertIntervalSetEq(is2, IntervalSet3D([
+            Interval3D((20,30),(0.4,1.0),(0,1))]))
+
+        is3 = is1.filter_size(max_size=0.1, axis='Y')
+        self.assertIntervalSetEq(is3, IntervalSet3D([
+            Interval3D((1,2),(0.5,0.9),(0.1,0.2))]))
+
+        is4 = is1.filter_size(min_size=0.3, max_size=0.5, axis='X')
+        self.assertIntervalSetEq(is3, IntervalSet3D([
+            Interval3D((1,2),(0.5,0.9),(0.1,0.2))]))
 
 
-
-
-
-
-
-        
 
 
 
