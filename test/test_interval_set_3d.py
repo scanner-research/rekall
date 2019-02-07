@@ -274,6 +274,29 @@ class TestIntervalSet3D(unittest.TestCase):
         is3 = is1.minus(is2)
         self.assertIntervalSetEq(is3, is1, eq)
 
+    def test_minus_with_single_frame(self):
+        is1 = IntervalSet3D([
+            Interval3D((1,1)),
+            Interval3D((3,3)),
+            Interval3D((4,4)),
+            Interval3D((7,7)),
+            Interval3D((10,10)),
+            ])
+        is2 = IntervalSet3D([
+            Interval3D((1,3)),
+            Interval3D((5,8)),
+            Interval3D((9,9)),
+            ])
+        is3 = is1.minus(is2)
+        target = IntervalSet3D([
+            Interval3D((4,4)),
+            Interval3D((10,10)),
+            ])
+        self.assertIntervalSetEq(is3, target)
+
+        is4 = is2.minus(is1)
+        self.assertIntervalSetEq(is4, is2)
+
     def test_match(self):
         left_box_frame_1 = Interval3D((1,1),(0.1,0.4),(0.4,0.8))
         right_box_frame_1 = Interval3D((1,1),(0.6,0.9),(0.3,0.7))
