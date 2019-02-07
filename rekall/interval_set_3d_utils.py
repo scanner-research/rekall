@@ -75,24 +75,3 @@ def or_preds(*preds):
         return False
     return new_pred
 
-# Parser for pattern matching
-# pattern: list of (names, constraints)
-# Returns:
-#   Dict of (VariableName, [SingleVariablePredicate])
-#   List of (VariableNames, Predicates)
-def parse_pattern(pattern):
-    node_defs = {}
-    multi_node_constraints = []
-    for names, constraints in pattern:
-        if len(names) == 1:
-            name = names[0]
-            if name not in node_defs:
-                node_defs[name] = list(constraints)
-            else:
-                node_defs[name] += constraints
-        else:
-            multi_node_constraints.append((names, constraints))
-            for name in names:
-                if name not in node_defs:
-                    node_defs[name] = []
-    return node_defs, multi_node_constraints
