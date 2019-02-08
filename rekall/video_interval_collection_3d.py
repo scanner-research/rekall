@@ -148,7 +148,7 @@ class VideoIntervalCollection3D:
 
     @staticmethod
     def _get_wrapped_unary_method(name):
-        def method(self, *args, parallel=True, **kwargs):
+        def method(self, *args, parallel=False, **kwargs):
             with perf_count(name):
                 selfmap = self.get_allintervals()
                 videos_to_process = selfmap.keys()
@@ -173,7 +173,7 @@ class VideoIntervalCollection3D:
     
     @staticmethod
     def _get_wrapped_binary_method(name):
-        def method(self, other, *args, parallel=True, **kwargs):
+        def method(self, other, *args, parallel=False, **kwargs):
             with perf_count(name):
                 video_map = {}
                 selfmap = self.get_allintervals()
@@ -205,7 +205,7 @@ class VideoIntervalCollection3D:
 
     @staticmethod
     def _get_wrapped_out_of_system_unary_method(name):
-        def method(self, *args, parallel=True, **kwargs):
+        def method(self, *args, parallel=False, **kwargs):
             with perf_count(name):
                 selfmap = self.get_allintervals()
                 videos_to_process = selfmap.keys()
