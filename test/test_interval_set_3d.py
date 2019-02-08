@@ -493,7 +493,7 @@ class TestIntervalSet3D(unittest.TestCase):
         is2 = IntervalSet3D(intervals)
 
         is3 = is1.collect_by_interval(is2, utils.T(during_inv()),
-                filter_empty=True, time_window=None)
+                filter_empty=True, time_window=None).map_payload(lambda p:p[1])
         target = IntervalSet3D([
             Interval3D((1,5), payload=IntervalSet3D(intervals[:2])),
             Interval3D((10,50), payload=IntervalSet3D(intervals[2:3])),
@@ -502,7 +502,7 @@ class TestIntervalSet3D(unittest.TestCase):
                 self.compare_interval_sets_in_payload())
 
         is4 = is1.collect_by_interval(is2, utils.T(overlaps()),
-                filter_empty=False, time_window=0)
+                filter_empty=False, time_window=0).map_payload(lambda p:p[1])
         target = IntervalSet3D([
             Interval3D((1,5), payload=IntervalSet3D(intervals[:2])),
             Interval3D((10,50), payload=IntervalSet3D(intervals[2:3])),

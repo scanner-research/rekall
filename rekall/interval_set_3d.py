@@ -486,7 +486,10 @@ class IntervalSet3D:
             filter_empty=True,time_window=None):
         """
         For each interval in self, nest under it all intervals in other
-            that satisfy the predicate and are within time_window
+            that satisfy the predicate and are within time_window.
+            The payload will become a tuple (T, IntervalSet) where T is the
+            original payload in self, and IntervalSet is the nested intervals.
+
         If filter_empty, only keep intervals in self that have corresponding
             intervals in other.
         """
@@ -498,7 +501,7 @@ class IntervalSet3D:
                     intrvlself.t,
                     intrvlself.x,
                     intrvlself.y,
-                    payload=intrvls_to_nest)]
+                    payload=(intrvlself.payload, intrvls_to_nest))]
             return []
         return IntervalSet3D(self._map_with_other_within_time_window(
             other, map_output, time_window))
