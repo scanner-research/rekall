@@ -55,6 +55,15 @@ def XY(pred):
         ])
     return new_pred
 
+# Apply a predicate on payload
+def P(pred):
+    def new_pred(*interval_3ds):
+        return pred(*[
+            i.payload for i in interval_3ds 
+        ])
+    return new_pred
+
+
 # Adapters for logical combinations of predicates
 def not_pred(pred):
     def new_pred(*args):

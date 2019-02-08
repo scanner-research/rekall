@@ -1,6 +1,8 @@
 from rekall.interval_set_3d import Interval3D, IntervalSet3D
+from rekall.video_interval_collection import VideoIntervalCollection as VIC
 from types import MethodType
 import multiprocessing as mp
+from tqdm import tqdm
 
 # Functions that ran in worker processes
 def _init_workers(context):
@@ -54,6 +56,82 @@ class VideoIntervalCollection3D:
         return "<VideoIntervalCollection3D videos={0}".format(
                 self._video_map.keys())
 
+    @classmethod
+    def from_iterable(cls, iterable, v_accessor, t_accessor,
+            x_accessor=lambda _:(0,1), y_accessor=lambda _:(0,1),
+            p_accessor=lambda _:None, progress=False, total=None):
+        """
+        Construct a VideoIntervalCollection from an iterable collection.
+
+        @iterable is an iterable collection.
+        @*_accessor are functions on the item in iterable that returns
+            video_id, temporal bounds, spatial bounds, or payload
+        """
+        video_ids_to_intervals = {}
+        for row in (tqdm(iterable, total=total)
+                if progress and total is not None else tqdm(iterable)
+                if progress else iterable):
+            interval = Interval3D(t_accessor(row),
+                    x_accessor(row), y_accessor(row), p_accessor(row))
+            video_id = v_accessor(row)
+            if video_id in video_ids_to_intervals:
+                video_ids_to_intervals[video_id].append(interval)
+            else:
+                video_ids_to_intervals[video_id] = [interval]
+        return cls({vid: IntervalSet3D(intervals) for vid, intervals in 
+            video_ids_to_intervals.items()})
+
+    @staticmethod
+    def django_bbox_default_schema():
+        return {
+          "video_id": "video_id",
+          "t1": "min_frame",
+          "t2": "max_frame",
+          "x1": "bbox_x1",
+          "x2": "bbox_x2",
+          "y1": "bbox_y1",
+          "y2": "bbox_y2",
+          "payload": "id"
+        }
+
+    @classmethod
+    def from_django_qs(cls, qs, schema={},
+            with_payload=None, progress=False, total=None):
+        """
+        Constructor for a Django queryset.
+        By default, the schema is
+        {
+            "video_id": "video_id",
+            "t1": "min_frame",
+            "t2": "max_frame",
+        }
+        """
+        schema_final = {
+          "video_id": "video_id",
+          "t1": "min_frame",
+          "t2": "max_frame",
+        }
+        schema_final.update(schema)
+        def get_accessor(field):
+            return lambda row: VIC.django_accessor(row, field)
+        def get_bounds_accessor(field1, field2):
+            return lambda row: (VIC.django_accessor(row, field1),
+                                VIC.django_accessor(row, field2))
+        s = schema_final
+        v = get_accessor(s['video_id'])
+        t = get_bounds_accessor(s['t1'], s['t2'])
+        kwargs = {}
+        if 'x1' in s and 'x2' in s:
+            kwargs['x_accessor'] = get_bounds_accessor(s['x1'],s['x2'])
+        if 'y1' in s and 'y2' in s:
+            kwargs['y_accessor'] = get_bounds_accessor(s['y1'],s['y2'])
+        if with_payload is not None:
+            kwargs['p_accessor'] = with_payload
+        elif 'payload' in s:
+            kwargs['p_accessor'] = get_accessor(s['payload'])
+        return cls.from_iterable(qs, v, t,
+                progress=progress, total=total, **kwargs)
+
     @staticmethod
     def _remove_empty_intervalsets(video_map):
         new_map = {}
@@ -64,26 +142,30 @@ class VideoIntervalCollection3D:
 
     @staticmethod
     def _get_wrapped_unary_method(name):
-        def method(self, *args, **kwargs):
+        def method(self, *args, parallel=True, **kwargs):
             selfmap = self.get_allintervals()
             videos_to_process = selfmap.keys()
             def func(set1):
                 return getattr(IntervalSet3D, name)(set1,*args,**kwargs)
 
-            # Send func selfmap and othermap to the worker processes as
-            # Global variables.
-            with mp.Pool(initializer=_init_workers,
-                    initargs=((func,selfmap),)) as pool:
-                videos_results_list = pool.map(
-                        _worker_func_unary, videos_to_process)
+            if parallel:
+                # Send func selfmap and othermap to the worker processes as
+                # Global variables.
+                with mp.Pool(initializer=_init_workers,
+                        initargs=((func,selfmap),)) as pool:
+                    videos_results_list = pool.map(
+                            _worker_func_unary, videos_to_process)
+            else:
+                videos_results_list = [
+                        (v,func(selfmap[v])) for v in videos_to_process]
             return VideoIntervalCollection3D(
-                    {video: results for video, results in videos_results_list
-                        if not results.empty()})
+                        {video: results for video, results in 
+                            videos_results_list if not results.empty()})
         return method
     
     @staticmethod
     def _get_wrapped_binary_method(name):
-        def method(self, other, *args, **kwargs):
+        def method(self, other, *args, parallel=True, **kwargs):
             video_map = {}
             selfmap = self.get_allintervals()
             othermap = other.get_allintervals()
@@ -95,12 +177,17 @@ class VideoIntervalCollection3D:
             def func(set1, set2):
                 return getattr(IntervalSet3D, name)(set1,set2,*args,**kwargs)
 
+            if parallel:
             # Send func selfmap and othermap to the worker processes as
             # Global variables.
-            with mp.Pool(initializer=_init_workers,
+                with mp.Pool(initializer=_init_workers,
                     initargs=((func,selfmap, othermap),)) as pool:
-                videos_results_list = pool.map(
+                    videos_results_list = pool.map(
                         _worker_func_binary, videos_to_process)
+            else:
+                videos_results_list = [
+                        (v, func(selfmap[v], othermap[v])) for v
+                        in videos_to_process]
             return VideoIntervalCollection3D(
                     {video: results for video, results in videos_results_list
                         if not results.empty()})
@@ -108,18 +195,22 @@ class VideoIntervalCollection3D:
 
     @staticmethod
     def _get_wrapped_out_of_system_unary_method(name):
-        def method(self, *args, **kwargs):
+        def method(self, *args, parallel=True, **kwargs):
             selfmap = self.get_allintervals()
             videos_to_process = selfmap.keys()
             def func(set1):
                 return getattr(IntervalSet3D, name)(set1,*args,**kwargs)
 
-            # Send func selfmap and othermap to the worker processes as
-            # Global variables.
-            with mp.Pool(initializer=_init_workers,
-                    initargs=((func,selfmap),)) as pool:
-                videos_results_list = pool.map(
-                        _worker_func_unary, videos_to_process)
+            if parallel:
+                # Send func selfmap and othermap to the worker processes as
+                # Global variables.
+                with mp.Pool(initializer=_init_workers,
+                        initargs=((func,selfmap),)) as pool:
+                    videos_results_list = pool.map(
+                            _worker_func_unary, videos_to_process)
+            else:
+                videos_results_list = [
+                        (v,func(selfmap[v])) for v in videos_to_process]
             return {video: results for video, results in videos_results_list}
         return method
 
