@@ -1,5 +1,6 @@
 from rekall.interval_set_3d import Interval3D, IntervalSet3D
 from rekall.video_interval_collection import VideoIntervalCollection as VIC
+from rekall.interval_set_3d_utils import perf_count
 from types import MethodType
 import multiprocessing as mp
 from tqdm import tqdm
@@ -143,21 +144,22 @@ class VideoIntervalCollection3D:
     @staticmethod
     def _get_wrapped_unary_method(name):
         def method(self, *args, parallel=True, **kwargs):
-            selfmap = self.get_allintervals()
-            videos_to_process = selfmap.keys()
-            def func(set1):
-                return getattr(IntervalSet3D, name)(set1,*args,**kwargs)
+            with perf_count(name):
+                selfmap = self.get_allintervals()
+                videos_to_process = selfmap.keys()
+                def func(set1):
+                    return getattr(IntervalSet3D, name)(set1,*args,**kwargs)
 
-            if parallel:
-                # Send func selfmap and othermap to the worker processes as
-                # Global variables.
-                with mp.Pool(initializer=_init_workers,
-                        initargs=((func,selfmap),)) as pool:
-                    videos_results_list = pool.map(
-                            _worker_func_unary, videos_to_process)
-            else:
-                videos_results_list = [
-                        (v,func(selfmap[v])) for v in videos_to_process]
+                if parallel:
+                    # Send func selfmap and othermap to the worker processes as
+                    # Global variables.
+                    with mp.Pool(initializer=_init_workers,
+                            initargs=((func,selfmap),)) as pool:
+                        videos_results_list = pool.map(
+                                _worker_func_unary, videos_to_process)
+                else:
+                    videos_results_list = [
+                            (v,func(selfmap[v])) for v in videos_to_process]
             return VideoIntervalCollection3D(
                         {video: results for video, results in 
                             videos_results_list if not results.empty()})
@@ -166,28 +168,29 @@ class VideoIntervalCollection3D:
     @staticmethod
     def _get_wrapped_binary_method(name):
         def method(self, other, *args, parallel=True, **kwargs):
-            video_map = {}
-            selfmap = self.get_allintervals()
-            othermap = other.get_allintervals()
-            videos_to_process = []
-            for key in selfmap:
-                if key in othermap:
-                    videos_to_process.append(key)
+            with perf_count(name):
+                video_map = {}
+                selfmap = self.get_allintervals()
+                othermap = other.get_allintervals()
+                videos_to_process = []
+                for key in selfmap:
+                    if key in othermap:
+                        videos_to_process.append(key)
 
-            def func(set1, set2):
-                return getattr(IntervalSet3D, name)(set1,set2,*args,**kwargs)
+                def func(set1, set2):
+                    return getattr(IntervalSet3D, name)(set1,set2,*args,**kwargs)
 
-            if parallel:
-            # Send func selfmap and othermap to the worker processes as
-            # Global variables.
-                with mp.Pool(initializer=_init_workers,
-                    initargs=((func,selfmap, othermap),)) as pool:
-                    videos_results_list = pool.map(
-                        _worker_func_binary, videos_to_process)
-            else:
-                videos_results_list = [
-                        (v, func(selfmap[v], othermap[v])) for v
-                        in videos_to_process]
+                if parallel:
+                # Send func selfmap and othermap to the worker processes as
+                # Global variables.
+                    with mp.Pool(initializer=_init_workers,
+                        initargs=((func,selfmap, othermap),)) as pool:
+                        videos_results_list = pool.map(
+                            _worker_func_binary, videos_to_process)
+                else:
+                    videos_results_list = [
+                            (v, func(selfmap[v], othermap[v])) for v
+                            in videos_to_process]
             return VideoIntervalCollection3D(
                     {video: results for video, results in videos_results_list
                         if not results.empty()})
@@ -196,21 +199,22 @@ class VideoIntervalCollection3D:
     @staticmethod
     def _get_wrapped_out_of_system_unary_method(name):
         def method(self, *args, parallel=True, **kwargs):
-            selfmap = self.get_allintervals()
-            videos_to_process = selfmap.keys()
-            def func(set1):
-                return getattr(IntervalSet3D, name)(set1,*args,**kwargs)
+            with perf_count(name):
+                selfmap = self.get_allintervals()
+                videos_to_process = selfmap.keys()
+                def func(set1):
+                    return getattr(IntervalSet3D, name)(set1,*args,**kwargs)
 
-            if parallel:
-                # Send func selfmap and othermap to the worker processes as
-                # Global variables.
-                with mp.Pool(initializer=_init_workers,
-                        initargs=((func,selfmap),)) as pool:
-                    videos_results_list = pool.map(
-                            _worker_func_unary, videos_to_process)
-            else:
-                videos_results_list = [
-                        (v,func(selfmap[v])) for v in videos_to_process]
+                if parallel:
+                    # Send func selfmap and othermap to the worker processes as
+                    # Global variables.
+                    with mp.Pool(initializer=_init_workers,
+                            initargs=((func,selfmap),)) as pool:
+                        videos_results_list = pool.map(
+                                _worker_func_unary, videos_to_process)
+                else:
+                    videos_results_list = [
+                            (v,func(selfmap[v])) for v in videos_to_process]
             return {video: results for video, results in videos_results_list}
         return method
 

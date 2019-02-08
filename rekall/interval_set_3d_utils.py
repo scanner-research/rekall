@@ -1,6 +1,8 @@
 from rekall.interval_list import Interval
 import cloudpickle
 import multiprocessing as mp
+from contextlib import contextmanager
+from time import perf_counter
 
 # Bound Combiners
 def merge_bound(bound1, bound2):
@@ -139,5 +141,11 @@ class AsyncWorkDispatcher:
             return [r for batch_future in self.output_batch_futures
                       for r in batch_future.get()]
 
-
-
+# Performance profling util
+@contextmanager
+def perf_count(name):
+    print("{0} starts.".format(name))
+    s = perf_counter()
+    yield
+    t = perf_counter()
+    print("{0} ends after {1:.2f} seconds".format(name, t-s))
