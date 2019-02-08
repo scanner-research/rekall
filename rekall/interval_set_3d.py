@@ -5,6 +5,8 @@ from rekall.logical_predicates import *
 from rekall.merge_ops import * 
 from functools import reduce
 import constraint as constraint
+import multiprocessing as mp
+import cloudpickle
 
 class Interval3D:
     """
@@ -136,38 +138,32 @@ class IntervalSet3D:
         """
         if time_window is None:
             time_window = self._time_window
-        dispatcher = utils.AsyncWorkDispatcher(mapper, self.size(),1)
-        # State is (other_start_index, dispatcher, done_flag)
-        state = (0, dispatcher, False)
+    
+        # State is (other_start_index, outputs, done_flag)
         def update_state(state, intrvlself):
-           start_index, dispatcher, done = state
-           intervals_in_other = []
-           if not done:
-               new_start_index = None
-               for idx, intrvlother in enumerate(
-                       other.get_intervals()[start_index:]):
-                   t1, t2 = intrvlself.t
-                   v1, v2 = intrvlother.t
-                   if t1 - time_window <= v2:
-                       if new_start_index is None:
-                           new_start_index = idx + start_index
-                       if v1 - time_window > t2:
-                           break
-                       intervals_in_other.append(intrvlother)
-               if new_start_index is None:
-                   done = True
-               else:
-                   start_index = new_start_index
-               dispatcher = dispatcher.add_work(
-                       (intrvlself, intervals_in_other))
-           else:
-               # No intervals in other are of interest to intrvlself
-               dispatcher = dispatcher.add_work((intrvlself, []))
-           return start_index, dispatcher, done
-        _, dispatcher, _ =  self.fold(update_state, state)
-        dispatcher.close()
-        return [r for results in dispatcher.get_all_outputs()
-                  for r in results]
+            start_index, outputs, done = state
+            intervals_in_other = []
+            if not done:
+                new_start_index = None
+                for idx, intrvlother in enumerate(
+                        other.get_intervals()[start_index:]):
+                    t1, t2 = intrvlself.t
+                    v1, v2 = intrvlother.t
+                    if t1 - time_window <= v2:
+                        if new_start_index is None:
+                            new_start_index = idx + start_index
+                        if v1 - time_window > t2:
+                            break
+                        intervals_in_other.append(intrvlother)
+                if new_start_index is None:
+                    done = True
+                else:
+                    start_index = new_start_index
+            outputs.append(mapper(intrvlself, intervals_in_other))
+            return start_index, outputs, done
+        state = (0, [], False)
+        _,outputs,_ =  self.fold(update_state, state)
+        return [r for results in outputs for r in results]
 
     def join(self, other, predicate, merge_op, time_window=None):
         """
