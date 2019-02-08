@@ -1,5 +1,19 @@
 from rekall.interval_set_3d import Interval3D, IntervalSet3D
 from types import MethodType
+import multiprocessing as mp
+
+# Functions that ran in worker processes
+def _init_workers(context):
+    global GLOBAL_CONTEXT
+    GLOBAL_CONTEXT = context
+
+def _worker_func_binary(video):
+    func, map1, map2 = GLOBAL_CONTEXT
+    return (video, func(map1[video], map2[video]))
+
+def _worker_func_unary(video):
+    func, map1 = GLOBAL_CONTEXT
+    return (video, func(map1[video]))
 
 class VideoIntervalCollection3D:
     """
@@ -51,12 +65,20 @@ class VideoIntervalCollection3D:
     @staticmethod
     def _get_wrapped_unary_method(name):
         def method(self, *args, **kwargs):
-            video_map = {}
-            for key, intervalset in self._video_map.items():
-                video_map[key] = getattr(intervalset, name)(*args, **kwargs)
+            selfmap = self.get_allintervals()
+            videos_to_process = selfmap.keys()
+            def func(set1):
+                return getattr(IntervalSet3D, name)(set1,*args,**kwargs)
+
+            # Send func selfmap and othermap to the worker processes as
+            # Global variables.
+            with mp.Pool(initializer=_init_workers,
+                    initargs=((func,selfmap),)) as pool:
+                videos_results_list = pool.map(
+                        _worker_func_unary, videos_to_process)
             return VideoIntervalCollection3D(
-                    VideoIntervalCollection3D._remove_empty_intervalsets(
-                        video_map))
+                    {video: results for video, results in videos_results_list
+                        if not results.empty()})
         return method
     
     @staticmethod
@@ -65,25 +87,40 @@ class VideoIntervalCollection3D:
             video_map = {}
             selfmap = self.get_allintervals()
             othermap = other.get_allintervals()
-            for key, intervalset in selfmap.items():
-                otherset = othermap.get(key, None)
-                if otherset is not None:
-                    video_map[key] = getattr(intervalset, name)(
-                        otherset, *args, **kwargs)
+            videos_to_process = []
+            for key in selfmap:
+                if key in othermap:
+                    videos_to_process.append(key)
+
+            def func(set1, set2):
+                return getattr(IntervalSet3D, name)(set1,set2,*args,**kwargs)
+
+            # Send func selfmap and othermap to the worker processes as
+            # Global variables.
+            with mp.Pool(initializer=_init_workers,
+                    initargs=((func,selfmap, othermap),)) as pool:
+                videos_results_list = pool.map(
+                        _worker_func_binary, videos_to_process)
             return VideoIntervalCollection3D(
-                    VideoIntervalCollection3D._remove_empty_intervalsets(
-                        video_map)) 
+                    {video: results for video, results in videos_results_list
+                        if not results.empty()})
         return method
 
     @staticmethod
     def _get_wrapped_out_of_system_unary_method(name):
         def method(self, *args, **kwargs):
-            video_map = {}
             selfmap = self.get_allintervals()
-            for key, intervalset in selfmap.items():
-                video_map[key] = getattr(intervalset, name)(
-                        *args, **kwargs)
-            return video_map
+            videos_to_process = selfmap.keys()
+            def func(set1):
+                return getattr(IntervalSet3D, name)(set1,*args,**kwargs)
+
+            # Send func selfmap and othermap to the worker processes as
+            # Global variables.
+            with mp.Pool(initializer=_init_workers,
+                    initargs=((func,selfmap),)) as pool:
+                videos_results_list = pool.map(
+                        _worker_func_unary, videos_to_process)
+            return {video: results for video, results in videos_results_list}
         return method
 
     def get_allintervals(self):
