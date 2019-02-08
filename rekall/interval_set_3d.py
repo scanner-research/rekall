@@ -127,6 +127,14 @@ class IntervalSet3D:
         else:
             return reduce(reducer, lst, init)
 
+    def fold_to_set(self, reducer, init=None,
+            acc_to_set = lambda acc:IntervalSet3D(acc),
+            sort_key = utils.sort_key_time_x_y):
+        """
+        Runs acc_to_set on result of fold and returns a IntervalSet3D.
+        """
+        return acc_to_set(self.fold(reducer, init, sort_key))
+
     def _map_with_other_within_time_window(self, other,
             mapper, time_window=None):
         """

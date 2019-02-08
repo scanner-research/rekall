@@ -23,7 +23,7 @@ class VideoIntervalCollection3D:
     videos. Logically, it contains a mapping from video ID's to IntervalSet3D.
     It exposes the same interface as an IntervalList.
     """
-    UNARY_METHODS = ["filter_size", "map", "filter", "group_by",
+    UNARY_METHODS = ["filter_size", "map", "filter", "group_by", "fold_to_set",
             "map_payload", "dilate", "group_by_time", "temporal_coalesce"]
     BINARY_METHODS = ["merge", "union", "join", "minus", "filter_against",
             "collect_by_interval"]

@@ -80,6 +80,11 @@ class TestVideoIntervalCollection3D(unittest.TestCase):
         d = c.fold(lambda m, i: max(m, i.payload), -1)
         self.assertEqual(d, {v: v for v in vids})
 
+    def test_fold_to_set(self):
+        c = TestVideoIntervalCollection3D.get_collection()
+        d = c.fold_to_set(lambda acc, i: acc + [i], [])
+        self.assertCollectionEq(c, d)
+
 
 class TestVideoIntervalCollection(unittest.TestCase):
     def setUpProfiler(self):
