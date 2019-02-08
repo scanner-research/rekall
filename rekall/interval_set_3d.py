@@ -215,9 +215,8 @@ class IntervalSet3D:
                 group[k].append(i)
             return group
         groups = self.fold(add_to_group, {})
-        output = []
-        for k, intervals in groups.items():
-            output.append(merge(k, IntervalSet3D(intervals)))
+        output = [merge(k, IntervalSet3D(intervals))
+            for k, intervals in groups.items()]
         return IntervalSet3D(output)
 
     def minus(self, other):

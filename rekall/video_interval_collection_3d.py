@@ -141,6 +141,11 @@ class VideoIntervalCollection3D:
                 new_map[video] = intervalset
         return new_map
 
+    def default_chunksize(self):
+        tasks = len(self._video_map)
+        return max(1, int(tasks/mp.cpu_count()))
+
+
     @staticmethod
     def _get_wrapped_unary_method(name):
         def method(self, *args, parallel=True, **kwargs):
@@ -156,7 +161,8 @@ class VideoIntervalCollection3D:
                     with mp.Pool(initializer=_init_workers,
                             initargs=((func,selfmap),)) as pool:
                         videos_results_list = pool.map(
-                                _worker_func_unary, videos_to_process)
+                                _worker_func_unary, videos_to_process,
+                                chunksize=self.default_chunksize())
                 else:
                     videos_results_list = [
                             (v,func(selfmap[v])) for v in videos_to_process]
@@ -186,7 +192,8 @@ class VideoIntervalCollection3D:
                     with mp.Pool(initializer=_init_workers,
                         initargs=((func,selfmap, othermap),)) as pool:
                         videos_results_list = pool.map(
-                            _worker_func_binary, videos_to_process)
+                            _worker_func_binary, videos_to_process,
+                            chunksize=self.default_chunksize())
                 else:
                     videos_results_list = [
                             (v, func(selfmap[v], othermap[v])) for v
@@ -211,7 +218,8 @@ class VideoIntervalCollection3D:
                     with mp.Pool(initializer=_init_workers,
                             initargs=((func,selfmap),)) as pool:
                         videos_results_list = pool.map(
-                                _worker_func_unary, videos_to_process)
+                                _worker_func_unary, videos_to_process,
+                                chunksize=self.default_chunksize())
                 else:
                     videos_results_list = [
                             (v,func(selfmap[v])) for v in videos_to_process]
