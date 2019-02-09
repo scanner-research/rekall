@@ -7,6 +7,7 @@ from functools import reduce
 import constraint as constraint
 import multiprocessing as mp
 import cloudpickle
+import copy
 
 class Interval3D:
     """
@@ -125,6 +126,8 @@ class IntervalSet3D:
         if init is None:
             return reduce(reducer, lst)
         else:
+            # Avoid taking a reference of the argument
+            init = copy.deepcopy(init)
             return reduce(reducer, lst, init)
 
     def fold_to_set(self, reducer, init=None,

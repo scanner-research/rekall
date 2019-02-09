@@ -84,6 +84,14 @@ class TestVideoIntervalCollection3D(unittest.TestCase):
         d = c.fold_to_set(lambda acc, i: acc + [i], [])
         self.assertCollectionEq(c, d)
 
+    def test_fold_modify_accumulator_in_place(self):
+        def update(acc, i):
+            acc.append(i)
+            return acc
+        c = TestVideoIntervalCollection3D.get_collection()
+        d = c.fold_to_set(update, [])
+        self.assertCollectionEq(c, d)
+
     def test_union(self):
         c= TestVideoIntervalCollection3D.get_collection()
         c1 = VideoIntervalCollection3D({v: c.get_allintervals()[v] for v in
