@@ -26,8 +26,7 @@ class TestVideoIntervalCollection3D(unittest.TestCase):
         p = Stats(self.pr)
         p.strip_dirs()
         p.sort_stats('cumtime')
-        print("Stats for TestVideoIntervalCollection3D "+self._testMethodName)
-        p.print_stats()
+        # p.print_stats()
 
     @staticmethod
     def get_collection():
@@ -57,7 +56,7 @@ class TestVideoIntervalCollection3D(unittest.TestCase):
         self.setUpProfiler()
         c = TestVideoIntervalCollection3D.get_collection()
         c2 = c.merge(c, overlaps_3d(),
-                payload_first, time_window=10)
+                payload_first, time_window=10, parallel=True)
         self.assertCollectionEq(c2, c)
         self.tearDownProfiler()
 
@@ -65,7 +64,7 @@ class TestVideoIntervalCollection3D(unittest.TestCase):
         self.setUpProfiler()
         c = TestVideoIntervalCollection3D.get_collection()
         c2 = c.merge(c, utils.T(overlaps()),
-                payload_first, time_window=10)
+                payload_first, time_window=10, parallel=True)
         self.assertCollectionEq(c2, c)
         self.tearDownProfiler()
 
@@ -85,6 +84,34 @@ class TestVideoIntervalCollection3D(unittest.TestCase):
         d = c.fold_to_set(lambda acc, i: acc + [i], [])
         self.assertCollectionEq(c, d)
 
+    def test_union(self):
+        c= TestVideoIntervalCollection3D.get_collection()
+        c1 = VideoIntervalCollection3D({v: c.get_allintervals()[v] for v in
+            c.get_allintervals() if v % 2 ==0})
+        c2 = VideoIntervalCollection3D({v: c.get_allintervals()[v] for v in
+            c.get_allintervals() if v % 2 ==1})
+        c3 = c1.union(c2)
+        self.assertCollectionEq(c3, c)
+
+    def test_minus(self):
+        c= TestVideoIntervalCollection3D.get_collection()
+        c1 = VideoIntervalCollection3D({v: c.get_allintervals()[v] for v in
+            c.get_allintervals() if v % 2 ==0})
+        c2 = VideoIntervalCollection3D({v: c.get_allintervals()[v] for v in
+            c.get_allintervals() if v % 2 ==1})
+        c3 = c.minus(c1.map(Interval3D.expand_to_frame))
+        self.assertCollectionEq(c3,c2)
+
+    def test_collect_by_interval(self):
+        c = TestVideoIntervalCollection3D.get_collection()
+        d = VideoIntervalCollection3D({1: IntervalSet3D([
+                Interval3D((t,t)) for t in range(1, 100)])})
+        e = c.collect_by_interval(d, utils.T(overlaps()),
+                filter_empty=False, time_window=0)
+        self.assertEqual(
+                e.get_allintervals().keys(), c.get_allintervals().keys())
+
+
 
 class TestVideoIntervalCollection(unittest.TestCase):
     def setUpProfiler(self):
@@ -95,8 +122,7 @@ class TestVideoIntervalCollection(unittest.TestCase):
         p = Stats(self.pr)
         p.strip_dirs()
         p.sort_stats('cumtime')
-        print("Stats for TestVideoIntervalCollection "+self._testMethodName)
-        p.print_stats()
+        # p.print_stats()
 
     @staticmethod
     def get_collection():

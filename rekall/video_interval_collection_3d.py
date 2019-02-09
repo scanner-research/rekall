@@ -12,7 +12,9 @@ def _init_workers(context):
 
 def _worker_func_binary(video):
     func, map1, map2 = GLOBAL_CONTEXT
-    return (video, func(map1[video], map2[video]))
+    it1 = map1.get(video, IntervalSet3D([]))
+    it2 = map2.get(video, IntervalSet3D([]))
+    return (video, func(it1, it2))
 
 def _worker_func_unary(video):
     func, map1 = GLOBAL_CONTEXT
@@ -178,13 +180,11 @@ class VideoIntervalCollection3D:
                 video_map = {}
                 selfmap = self.get_allintervals()
                 othermap = other.get_allintervals()
-                videos_to_process = []
-                for key in selfmap:
-                    if key in othermap:
-                        videos_to_process.append(key)
+                videos_to_process = set(selfmap.keys()).union(othermap.keys())
 
                 def func(set1, set2):
-                    return getattr(IntervalSet3D, name)(set1,set2,*args,**kwargs)
+                    return getattr(IntervalSet3D, name)(
+                            set1,set2,*args,**kwargs)
 
                 if parallel:
                 # Send func selfmap and othermap to the worker processes as
@@ -196,7 +196,8 @@ class VideoIntervalCollection3D:
                             chunksize=self.default_chunksize())
                 else:
                     videos_results_list = [
-                            (v, func(selfmap[v], othermap[v])) for v
+                            (v, func(selfmap.get(v, IntervalSet3D([])),
+                                othermap.get(v, IntervalSet3D([])))) for v
                             in videos_to_process]
             return VideoIntervalCollection3D(
                     {video: results for video, results in videos_results_list
