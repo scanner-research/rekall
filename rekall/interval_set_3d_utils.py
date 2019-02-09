@@ -143,9 +143,12 @@ class AsyncWorkDispatcher:
 
 # Performance profling util
 @contextmanager
-def perf_count(name):
-    print("{0} starts.".format(name))
-    s = perf_counter()
-    yield
-    t = perf_counter()
-    print("{0} ends after {1:.2f} seconds".format(name, t-s))
+def perf_count(name, enable=True):
+    if not enable:
+        yield
+    else:
+        print("{0} starts.".format(name))
+        s = perf_counter()
+        yield
+        t = perf_counter()
+        print("{0} ends after {1:.2f} seconds".format(name, t-s))
