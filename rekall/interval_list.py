@@ -193,49 +193,6 @@ class IntervalList:
                 start_index += new_start_index
         return IntervalList(output)
 
-    def experimental_join(self, other, predicate,
-            interval_generator=lambda i1, i2: [(i1.start, i1.end)],
-            payload_generator=lambda i1, i2: (i1.payload, i2), 
-            working_window=None):
-        """
-        Joins self.intrvls with other.intrvls on predicate and produces new
-        Intervals based on interval_generator.
-
-        interval_generator takes two Intervals and returns a list of 
-        (start, end) tuples. It defaults to the interval span in self.
-
-        payload_generator takes two Intervals and returns the payload for
-        each of the newly generated intervals. It defaults to a tuple
-        where the first element is the payload in interval in self, and
-        second element is the interval in other.
-        """
-        def merge_op(intvl1, intvl2):
-            payload = payload_generator(intvl1, intvl2)
-            return [Interval(start, end, payload) for start, end in
-                    interval_generator(intvl1, intvl2)]
-        return self.join(other, merge_op, predicate, working_window)
-
-    def experimental_group_by_interval(self):
-        """
-        Collapses all intervals with the same (start, end) into one
-        interval, and set its payload to be the list of all payloads
-        of these intervals.
-        """
-        output = {}
-        for intrvl in self.intrvls:
-            key = Interval.sort_key(intrvl)
-            if key not in output:
-                output[key] = [intrvl.payload]
-            else:
-                output[key].append(intrvl.payload)
-        return IntervalList([(key[0], key[1], payloads) for key, payloads in output.items()])
-
-    def experimental_map_payload(self, func):
-        def map_fn(intvl):
-            return Interval(intvl.start, intvl.end, func(intvl.payload))
-        return self.map(map_fn)
-
-
     def fold(self, fold_fn, init_acc):
         """
         Computes a fold across intrvls.
