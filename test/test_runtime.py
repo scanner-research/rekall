@@ -75,7 +75,14 @@ class TestRuntime(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             rt.run(TestRuntime.query_that_throws, vids)
 
-    def test_wrap_interval_set(self):
+    def test_wrap_interval_set_spawn(self):
+        vids = list(range(1000))
+        rt = Runtime(get_spawned_process_pool_factory())
+        self.assertCollectionEq(
+                rt.run(wrap_interval_set(TestRuntime.query_single_vid),vids),
+                TestRuntime.query(vids))
+
+    def test_wrap_interval_set_fork(self):
         vids = list(range(1000))
         rt = Runtime(get_forked_process_pool_factory())
         self.assertCollectionEq(

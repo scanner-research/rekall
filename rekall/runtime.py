@@ -1,3 +1,4 @@
+import cloudpickle
 from math import ceil
 import multiprocessing as mp
 import random
@@ -54,12 +55,40 @@ def _apply_global_context_as_function(vids):
     fn = GLOBAL_CONTEXT
     return fn(vids)
 
-class ChildProcessPool():
-    def __init__(self, fn, method, num_workers):
-        self._pool = mp.get_context(method).Pool(
+class ForkedProcessPool():
+    def __init__(self, fn, num_workers):
+        self._pool = mp.get_context("fork").Pool(
                 processes=num_workers,
                 initializer=_child_process_init,
                 initargs=(fn,))
+
+    def apply_async(self, args, done_callback):
+        def success(result):
+            return done_callback((True, result))
+        def error(err):
+            return done_callback((False, err))
+        return self._pool.apply_async(
+                _apply_global_context_as_function,
+                args=(args,),
+                callback=success,
+                error_callback=error)
+
+    def shut_down(self):
+        self._pool.terminate()
+
+# When Spawning arguments to initializer are pickled.
+# To allow arbitrary lambdas with closure, use cloudpickle to serialize the
+# function to execute
+def _spawned_child_process_init(serialized_context):
+    global GLOBAL_CONTEXT
+    GLOBAL_CONTEXT = cloudpickle.loads(serialized_context)
+
+class SpawnedProcessPool():
+    def __init__(self, fn, num_workers):
+        self._pool = mp.get_context("spawn").Pool(
+                processes=num_workers,
+                initializer=_spawned_child_process_init,
+                initargs=(cloudpickle.dumps(fn),))
 
     def apply_async(self, args, done_callback):
         def success(result):
@@ -82,14 +111,14 @@ def inline_pool_factory(fn):
 # A WorkerPool that fork()s current process to create children processes.
 def get_forked_process_pool_factory(num_workers=mp.cpu_count()):
     def factory(fn):
-        return ChildProcessPool(fn, "fork", num_workers)
+        return ForkedProcessPool(fn, num_workers)
     return factory
 
 # A WorkerPool that spawns clean python interpreter process to create
 # children processes.
 def get_spawned_process_pool_factory(num_workers=mp.cpu_count()):
     def factory(fn):
-        return ChildProcessPool(fn, "spawn", num_workers)
+        return SpawnedProcessPool(fn, num_workers)
     return factory
 
 class _WorkerPoolContext():

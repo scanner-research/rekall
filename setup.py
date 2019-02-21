@@ -10,7 +10,7 @@ if __name__ == "__main__":
         author_email='danfu@stanford.edu',
         license='Apache 2.0',
         packages=['rekall'],
-        install_requires=['python-constraint', 'tqdm'],
+        install_requires=['python-constraint', 'tqdm', 'cloudpickle'],
         setup_requires=['pytest-runner'],
         tests_require=['pytest'],
         zip_safe=False)
