@@ -52,6 +52,7 @@ def _child_process_init(context):
     GLOBAL_CONTEXT=context
 
 def _apply_global_context_as_function(vids):
+    global GLOBAL_CONTEXT
     fn = GLOBAL_CONTEXT
     return fn(vids)
 
@@ -79,16 +80,16 @@ class ForkedProcessPool():
 # When Spawning arguments to initializer are pickled.
 # To allow arbitrary lambdas with closure, use cloudpickle to serialize the
 # function to execute
-def _spawned_child_process_init(serialized_context):
-    global GLOBAL_CONTEXT
-    GLOBAL_CONTEXT = cloudpickle.loads(serialized_context)
+def _apply_serialized_function(serialized_func, vids):
+    fn = cloudpickle.loads(serialized_func)
+    return fn(vids)
 
 class SpawnedProcessPool():
-    def __init__(self, fn, num_workers):
+    def __init__(self, fn, num_workers, initializer=None):
         self._pool = mp.get_context("spawn").Pool(
                 processes=num_workers,
-                initializer=_spawned_child_process_init,
-                initargs=(cloudpickle.dumps(fn),))
+                initializer=initializer)
+        self._pickled_fn = cloudpickle.dumps(fn)
 
     def apply_async(self, args, done_callback):
         def success(result):
@@ -96,8 +97,8 @@ class SpawnedProcessPool():
         def error(err):
             return done_callback((False, err))
         return self._pool.apply_async(
-                _apply_global_context_as_function,
-                args=(args,),
+                _apply_serialized_function,
+                args=(self._pickled_fn, args),
                 callback=success,
                 error_callback=error)
 
