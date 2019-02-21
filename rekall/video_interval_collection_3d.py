@@ -59,6 +59,13 @@ class VideoIntervalCollection3D:
         return "<VideoIntervalCollection3D videos={0}".format(
                 self._video_map.keys())
 
+    # Makes this class pickleable
+    def __getstate__(self):
+        return self._video_map
+    def __setstate__(self, video_map):
+        self._video_map = video_map
+
+
     @classmethod
     def from_iterable(cls, iterable, v_accessor, t_accessor,
             x_accessor=lambda _:(0,1), y_accessor=lambda _:(0,1),
