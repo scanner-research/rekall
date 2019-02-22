@@ -39,53 +39,55 @@ class TestRuntime(unittest.TestCase):
         rt = Runtime.inline()
 
         self.assertCollectionEq(
-                rt.run(TestRuntime.query, vids),
+                rt.run(TestRuntime.query, vids)[0],
                 TestRuntime.query(vids))
 
     def test_exception_inline(self):
         vids = list(range(1))
         rt = Runtime.inline()
 
-        with self.assertRaises(RuntimeError):
-            rt.run(TestRuntime.query_that_throws, vids)
+        _, vids_with_err = rt.run(TestRuntime.query_that_throws, vids)
+        self.assertEqual(set(vids), set(vids_with_err))
 
     def test_forked_children(self):
         vids = list(range(10))
         rt = Runtime(get_forked_process_pool_factory())
         self.assertCollectionEq(
-                rt.run(TestRuntime.query, vids, chunksize=3),
+                rt.run(TestRuntime.query, vids, chunksize=3)[0],
                 TestRuntime.query(vids))
 
     def test_forked_children_exception(self):
         vids = list(range(1))
         rt = Runtime(get_forked_process_pool_factory(1))
-        with self.assertRaises(RuntimeError):
-            rt.run(TestRuntime.query_that_throws, vids)
+        _, vids_with_err = rt.run(TestRuntime.query_that_throws, vids)
+        self.assertEqual(set(vids), set(vids_with_err))
 
     def test_spawned_children(self):
         vids = list(range(10))
         rt = Runtime(get_spawned_process_pool_factory())
         self.assertCollectionEq(
-                rt.run(TestRuntime.query, vids, chunksize=3),
+                rt.run(TestRuntime.query, vids, chunksize=3)[0],
                 TestRuntime.query(vids))
 
     def test_spawned_children_exception(self):
         vids = list(range(1))
         rt = Runtime(get_spawned_process_pool_factory())
-        with self.assertRaises(RuntimeError):
-            rt.run(TestRuntime.query_that_throws, vids)
+        _, vids_with_err = rt.run(TestRuntime.query_that_throws, vids)
+        self.assertEqual(set(vids), set(vids_with_err))
 
     def test_wrap_interval_set_spawn(self):
         vids = list(range(1000))
         rt = Runtime(get_spawned_process_pool_factory())
         self.assertCollectionEq(
-                rt.run(wrap_interval_set(TestRuntime.query_single_vid),vids),
+                rt.run(wrap_interval_set(TestRuntime.query_single_vid),
+                    vids)[0],
                 TestRuntime.query(vids))
 
     def test_wrap_interval_set_fork(self):
         vids = list(range(1000))
         rt = Runtime(get_forked_process_pool_factory())
         self.assertCollectionEq(
-                rt.run(wrap_interval_set(TestRuntime.query_single_vid),vids),
+                rt.run(wrap_interval_set(TestRuntime.query_single_vid),
+                    vids)[0],
                 TestRuntime.query(vids))
 
