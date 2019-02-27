@@ -46,7 +46,8 @@ class TestRuntime(unittest.TestCase):
         vids = list(range(1))
         rt = Runtime.inline()
 
-        _, vids_with_err = rt.run(TestRuntime.query_that_throws, vids)
+        _, vids_with_err = rt.run(TestRuntime.query_that_throws, vids,
+                print_error=False)
         self.assertEqual(set(vids), set(vids_with_err))
 
     def test_forked_children(self):
@@ -59,7 +60,8 @@ class TestRuntime(unittest.TestCase):
     def test_forked_children_exception(self):
         vids = list(range(1))
         rt = Runtime(get_forked_process_pool_factory(1))
-        _, vids_with_err = rt.run(TestRuntime.query_that_throws, vids)
+        _, vids_with_err = rt.run(TestRuntime.query_that_throws, vids,
+                print_error=False)
         self.assertEqual(set(vids), set(vids_with_err))
 
     def test_spawned_children(self):
@@ -72,7 +74,8 @@ class TestRuntime(unittest.TestCase):
     def test_spawned_children_exception(self):
         vids = list(range(1))
         rt = Runtime(get_spawned_process_pool_factory())
-        _, vids_with_err = rt.run(TestRuntime.query_that_throws, vids)
+        _, vids_with_err = rt.run(TestRuntime.query_that_throws, vids,
+                print_error=False)
         self.assertEqual(set(vids), set(vids_with_err))
 
     def test_wrap_interval_set_spawn(self):

@@ -162,12 +162,13 @@ class _WorkerPoolContext():
     def __exit__(self, *args):
         self._pool.shut_down()
 
-def _get_callback(pbar, vids_with_err):
+def _get_callback(pbar, vids_with_err, print_error=True):
     def callback(vids, err=None):
         if err is None:
             pbar.update(len(vids))
         else:
-            print("Error when processing {0}:{1}".format(vids, repr(err)))
+            if print_error:
+                print("Error when processing {0}:{1}".format(vids, repr(err)))
             vids_with_err.extend(vids)
     return callback
 
@@ -211,7 +212,8 @@ class Runtime():
 
     def run(self, query, vids,
             randomize=True, chunksize=1,
-            progress=False, profile=False):
+            progress=False, profile=False,
+            print_error=True):
         """
         Runs the rekall query on given video ids.
         query is a function from a list of video ids to a
@@ -229,7 +231,8 @@ class Runtime():
                                 random.shuffle(vids)
                             async_results = pool.map(
                                     _create_tasks(vids, chunksize),
-                                    _get_callback(pbar, vids_with_err))
+                                    _get_callback(pbar, vids_with_err,
+                                        print_error))
                         task_results = []
                         for future in async_results:
                             try:
