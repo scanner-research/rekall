@@ -130,7 +130,6 @@ class VideoIntervalCollection:
             predicate=true_pred(arity=2),
                  parallel=None):
         """ See IntervalList#coalesce for details. """
-        print('coalesce')
         if parallel is not None:
             res = self._process_run("coalesce", [payload_merge_op, predicate], parallel)
             return VideoIntervalCollection(
@@ -146,7 +145,6 @@ class VideoIntervalCollection:
 
     def dilate(self, window, parallel=None):
         """ See IntervalList#dilate for details. """
-        print('dilate')
         if parallel is not None:
             res = self._process_run("dilate", [window], parallel)
             return VideoIntervalCollection(
@@ -160,7 +158,6 @@ class VideoIntervalCollection:
 
     def filter(self, fn, parallel=None):
         """ See IntervalList#filter for details. """
-        print('filter')
         if parallel is not None:
             res = self._process_run("filter", [fn], parallel)
             return VideoIntervalCollection(
