@@ -533,11 +533,25 @@ class TestIntervalSet3D(unittest.TestCase):
                 is1.temporal_coalesce(payload_plus, epsilon=2),
                 IntervalSet3D([Interval3D((1,23),payload=8)]))
 
-
-
-
-
-
-
-
+    def test_split(self):
+        is1 = IntervalSet3D([
+            Interval3D((1,5)),
+            Interval3D((10,22)),
+            ])
+        def split_fn(i):
+            output = []
+            t = i.copy()
+            while t.length() > 5:
+                output.append(Interval3D((t.t[0],t.t[0]+5)))
+                t.t = (t.t[0]+5, t.t[1])
+            if t.length() > 0:
+                output.append(t)
+            return IntervalSet3D(output)
+        target = IntervalSet3D([
+            Interval3D((1,5)),
+            Interval3D((10,15)),
+            Interval3D((15,20)),
+            Interval3D((20,22)),
+            ])
+        self.assertIntervalSetEq(target, is1.split(split_fn))
 

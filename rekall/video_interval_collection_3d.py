@@ -27,7 +27,8 @@ class VideoIntervalCollection3D:
     It exposes the same interface as an IntervalList.
     """
     UNARY_METHODS = ["filter_size", "map", "filter", "group_by", "fold_to_set",
-            "map_payload", "dilate", "group_by_time", "temporal_coalesce"]
+            "map_payload", "dilate", "group_by_time", "temporal_coalesce",
+            "split"]
     BINARY_METHODS = ["merge", "union", "join", "minus", "filter_against",
             "collect_by_interval"]
     OUT_OF_SYSTEM_UNARY_METHODS = ["size", "empty", "fold", "match"]

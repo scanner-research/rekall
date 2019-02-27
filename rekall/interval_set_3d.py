@@ -112,6 +112,15 @@ class IntervalSet3D:
         """
         return IntervalSet3D([map_fn(intrvl) for intrvl in self._intrvls])
 
+    def split(self, split_fn):
+        """
+        Splits each interval into a set of intervals.
+        split_fn takes an Interval3D and returns a list of IntervalSet3D
+        """
+        nested = [split_fn(intrvl).get_intervals() for intrvl in 
+                    self._intrvls]
+        return IntervalSet3D([i for intrvls in nested for i in intrvls])
+
     def union(self, other):
         return IntervalSet3D(self._intrvls + other._intrvls)
 
