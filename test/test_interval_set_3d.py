@@ -556,27 +556,26 @@ class TestIntervalSet3D(unittest.TestCase):
             ])
         self.assertIntervalSetEq(target, is1.split(split_fn))
 
-    def test_json_serialization(self):
+    def test_json_conversion(self):
         is1 = IntervalSet3D([
-            Interval3D((1,5)),
+            Interval3D((1,5), payload=5),
             Interval3D((10,50),(0,1),(0.5,1),
                 payload=IntervalSet3D([
                     Interval3D((20,25))
                     ]))
             ])
-        recovered_obj = json.loads(is1.to_json_string())
         self.assertEqual(
-                recovered_obj,
+                is1.to_json(),
                 [{
-                    "t": [1,5],
-                    "x": [0,1],
-                    "y": [0,1],
-                    "payload": None
+                    "t": (1,5),
+                    "x": (0,1),
+                    "y": (0,1),
+                    "payload": 5
                 },{
-                    "t": [10,50],
-                    "x": [0,1],
-                    "y": [0.5,1],
+                    "t": (10,50),
+                    "x": (0,1),
+                    "y": (0.5,1),
                     "payload": [
-                        {"t": [20,25], "x":[0,1], "y":[0,1], "payload":None}
+                        {"t": (20,25), "x":(0,1), "y":(0,1), "payload":None}
                     ]
                 }])
