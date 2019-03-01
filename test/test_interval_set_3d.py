@@ -7,6 +7,7 @@ from rekall.temporal_predicates import (overlaps, before, meets_before, equal,
 from rekall.bbox_predicates import left_of, above, height_at_least
 import unittest
 from operator import eq
+import json
 
 class TestInterval3D(unittest.TestCase):
     @staticmethod
@@ -555,3 +556,27 @@ class TestIntervalSet3D(unittest.TestCase):
             ])
         self.assertIntervalSetEq(target, is1.split(split_fn))
 
+    def test_json_serialization(self):
+        is1 = IntervalSet3D([
+            Interval3D((1,5)),
+            Interval3D((10,50),(0,1),(0.5,1),
+                payload=IntervalSet3D([
+                    Interval3D((20,25))
+                    ]))
+            ])
+        recovered_obj = json.loads(is1.to_json_string())
+        self.assertEqual(
+                recovered_obj,
+                [{
+                    "t": [1,5],
+                    "x": [0,1],
+                    "y": [0,1],
+                    "payload": None
+                },{
+                    "t": [10,50],
+                    "x": [0,1],
+                    "y": [0.5,1],
+                    "payload": [
+                        {"t": [20,25], "x":[0,1], "y":[0,1], "payload":None}
+                    ]
+                }])

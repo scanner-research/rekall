@@ -8,6 +8,7 @@ import constraint as constraint
 import multiprocessing as mp
 import cloudpickle
 import copy
+import json
 
 class Interval3D:
     """
@@ -536,4 +537,21 @@ class IntervalSet3D:
                     output.append(intrvl)
             return output
         return IntervalSet3D(self.fold(update_output, []))
+
+    def to_json_string(self):
+        """
+        Serializes self to a JSON string
+        """
+        return json.dumps(self, cls=_IntervalSet3DJsonEncoder)
+
+class _IntervalSet3DJsonEncoder(json.JSONEncoder):
+    """
+    A JSON Encoder for Interval3D and IntervalSet3D
+    """
+    def default(self, obj):
+        if isinstance(obj, Interval3D):
+            return obj.__dict__
+        if isinstance(obj, IntervalSet3D):
+            return obj.get_intervals()
+        return super().default(obj)
 
