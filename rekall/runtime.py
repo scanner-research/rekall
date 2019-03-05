@@ -5,17 +5,20 @@ import random
 from tqdm import tqdm
 
 from rekall.interval_set_3d_utils import perf_count
-from rekall.video_interval_collection_3d import VideoIntervalCollection3D
+from rekall.domain_interval_collection import DomainIntervalCollection
 
 # Custom exception type
 class TaskException(Exception):
     def __repr__(self):
         return "TaskException from {0}".format(self.__cause__)
 
+class RekallRuntimeException(Exception):
+    pass
+
 def _wrap_for_exception(fn):
-    def wrapped(vids):
+    def wrapped(domains):
         try:
-            return fn(vids)
+            return fn(domains)
         except Exception as e:
             raise TaskException() from e
     return wrapped
@@ -162,38 +165,33 @@ class _WorkerPoolContext():
     def __exit__(self, *args):
         self._pool.shut_down()
 
-def _get_callback(pbar, vids_with_err, print_error=True):
-    def callback(vids, err=None):
+def _get_callback(pbar, args_with_err, print_error=True):
+    def callback(task_args, err=None):
         if err is None:
-            pbar.update(len(vids))
+            if pbar is not None:
+                pbar.update(len(task_args))
         else:
             if print_error:
-                print("Error when processing {0}:{1}".format(vids, repr(err)))
-            vids_with_err.extend(vids)
+                print("Error when processing {0}:{1}".format(
+                    task_args, repr(err)))
+            args_with_err.extend(task_args)
     return callback
 
-def _combine_collections(collections):
-    result = {}
-    result_keys = set([])
-    for c in collections:
-        d = c.get_allintervals()
-        keys = set(d.keys())
-        if not keys.isdisjoint(result_keys):
-            repeated_keys = keys.intersection(result_keys)
-            raise RuntimeError("Videos {0} found in multiple results".format(
-                repeated_keys))
-        result_keys = result_keys.union(keys)
-        result.update(c.get_allintervals())
-    return VideoIntervalCollection3D(result)
+def _combine_results(collections):
+    assert(len(collections)>0)
+    output = collections[0]
+    for c in collections[1:]:
+        output = output.union(c)
+    return output
 
-def _create_tasks(vids, chunksize):
-    total = len(vids)
+def _create_tasks(args, chunksize):
+    total = len(args)
     num_tasks = int(ceil(total/chunksize))
     tasks = []
     for task_i in range(num_tasks):
         start = chunksize*task_i
         end = min(total,start+chunksize)
-        tasks.append(vids[start:end])
+        tasks.append(args[start:end])
     return tasks
 
 class Runtime():
@@ -210,28 +208,32 @@ class Runtime():
     def inline(cls):
         return cls(inline_pool_factory)
 
-    def run(self, query, vids,
+    def run(self, query, args,
             randomize=True, chunksize=1,
             progress=False, profile=False,
             print_error=True):
         """
-        Runs the rekall query on given video ids.
-        query is a function from a list of video ids to a
-            VideoIntervalCollection3D
+        Runs the rekall query on given args.
+        Since args may be long, the runtime may split it into chunks and send
+        each chunk to workers that may run in parallel.
+        `query` is a function from a batch of args to an IntervalSet3D or
+        a DomainIntervalCollection
+        Returns (query_output, args_with_err) where query_output is the same
+        as applying query on args.
         """
         query = _wrap_for_exception(query)
         with perf_count("Executing query in Runtime", enable=profile):
             with _WorkerPoolContext(self._get_worker_pool(query)) as pool:
-                total_work = len(vids)
+                total_work = len(args)
                 with tqdm(total=total_work, disable=not progress) as pbar:
                     with perf_count("Executing in workers", enable=profile):
-                        vids_with_err = []
+                        args_with_err = []
                         with perf_count("Dispatching tasks", enable=profile):
                             if randomize:
-                                random.shuffle(vids)
+                                random.shuffle(args)
                             async_results = pool.map(
-                                    _create_tasks(vids, chunksize),
-                                    _get_callback(pbar, vids_with_err,
+                                    _create_tasks(args, chunksize),
+                                    _get_callback(pbar, args_with_err,
                                         print_error))
                         task_results = []
                         for future in async_results:
@@ -242,12 +244,43 @@ class Runtime():
                                 pass
                     with perf_count("Combining results from workers",
                             enable=profile):
-                        return (_combine_collections(task_results),
-                                vids_with_err)
+                        if len(task_results) == 0:
+                            raise RekallRuntimeException(
+                                    "All tasks failed in Runtime")
+                        return (_combine_results(task_results),
+                                args_with_err)
 
-# Wraps a query function from a single vid to an IntervalSet3D
-def wrap_interval_set(query):
-    def fn(vids):
-        return VideoIntervalCollection3D({
-            vid: query(vid) for vid in vids})
-    return fn
+    def get_result_iterator(self, query, args, randomize=True, chunksize=1, 
+            print_error=True):
+        """
+        Returns a generator for results of running `query` on chunks of `args`
+
+        Since args may be long, the runtime may split it into chunks and send
+        each chunk to workers that may run in parallel.
+        `query` is a function from a batch of args to an IntervalSet3D or
+        a DomainIntervalCollection
+
+        If randomize is True, results are yielded in the same order as args.
+        If any chunk encountered error, the error is thrown after all
+        successful results are yielded.
+        """
+        query = _wrap_for_exception(query)
+        with _WorkerPoolContext(self._get_worker_pool(query)) as pool:
+            total_work = len(args)
+            args_with_err = []
+            if randomize:
+                random.shuffle(args)
+            async_results = pool.map(
+                _create_tasks(args, chunksize),
+                _get_callback(None, args_with_err, print_error))
+            for future in async_results:
+                try:
+                    r = future.get()
+                except TaskException:
+                    continue
+                yield r
+            if len(args_with_err) > 0:
+                raise RekallRuntimeException(
+                        "The following tasks failed: {0}".format(
+                    args_with_err))
+
