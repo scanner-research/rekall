@@ -177,13 +177,6 @@ def _get_callback(pbar, args_with_err, print_error=True):
             args_with_err.extend(task_args)
     return callback
 
-def _combine_results(collections):
-    assert(len(collections)>0)
-    output = collections[0]
-    for c in collections[1:]:
-        output = output.union(c)
-    return output
-
 def _create_tasks(args, chunksize):
     total = len(args)
     num_tasks = int(ceil(total/chunksize))
@@ -193,6 +186,23 @@ def _create_tasks(args, chunksize):
         end = min(total,start+chunksize)
         tasks.append(args[start:end])
     return tasks
+
+def union_combiner(result1, result2):
+    return result1.union(result2)
+
+def disjoint_domain_combiner(result1, result2):
+    """ Same as union_combiner but assumes results are 
+    DomainIntervalCollections with disjoint keys so is faster.
+    """
+    d1 = result1.get_grouped_intervals()
+    d2 = result2.get_grouped_intervals()
+    k1,k2 = set(d1.keys()), set(d2.keys())
+    if k1.isdisjoint(k2):
+        return DomainIntervalCollection({**d1, **d2})
+    intersection = k1 & k2
+    raise RekallRuntimeException(
+        "DisjointDomainCombiner used on results"
+        " with overlapping domains {0}".format(intersection))
 
 class Runtime():
     """
@@ -208,7 +218,7 @@ class Runtime():
     def inline(cls):
         return cls(inline_pool_factory)
 
-    def run(self, query, args,
+    def run(self, query, args, combiner=union_combiner,
             randomize=True, chunksize=1,
             progress=False, profile=False,
             print_error=True):
@@ -235,20 +245,19 @@ class Runtime():
                                     _create_tasks(args, chunksize),
                                     _get_callback(pbar, args_with_err,
                                         print_error))
-                        task_results = []
+                        combined_result = None
                         for future in async_results:
                             try:
                                 r = future.get()
-                                task_results.append(r)
                             except TaskException:
-                                pass
-                    with perf_count("Combining results from workers",
-                            enable=profile):
-                        if len(task_results) == 0:
-                            raise RekallRuntimeException(
-                                    "All tasks failed in Runtime")
-                        return (_combine_results(task_results),
-                                args_with_err)
+                                continue
+                            if combined_result is None:
+                                combined_result = r
+                            else:
+                                combined_result = combiner(combined_result, r)
+                        if combined_result is None and total_work>0:
+                            raise RekallRuntimeException("All tasks failed!")
+                        return (combined_result, args_with_err)
 
     def get_result_iterator(self, query, args, randomize=True, chunksize=1, 
             print_error=True):
