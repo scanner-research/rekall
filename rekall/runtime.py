@@ -260,7 +260,7 @@ class Runtime():
                         return (combined_result, args_with_err)
 
     def get_result_iterator(self, query, args, randomize=True, chunksize=1, 
-            print_error=True):
+            print_error=True, dispatch_size=mp.cpu_count()):
         """
         Returns a generator for results of running `query` on chunks of `args`
 
@@ -269,22 +269,37 @@ class Runtime():
         `query` is a function from a batch of args to an IntervalSet3D or
         a DomainIntervalCollection
 
-        If randomize is True, results are yielded in the same order as args.
+        If randomize is False, results are yielded in the same order as args.
+        If dispatch_size > 0, chunks are dispatched in batches lazily as
+        previous results are consumed.
         If any chunk encountered error, the error is thrown after all
         successful results are yielded.
         """
         query = _wrap_for_exception(query)
         with _WorkerPoolContext(self._get_worker_pool(query)) as pool:
-            total_work = len(args)
             args_with_err = []
             if randomize:
                 random.shuffle(args)
-            async_results = pool.map(
-                _create_tasks(args, chunksize),
-                _get_callback(None, args_with_err, print_error))
-            for future in async_results:
+            tasks = _create_tasks(args, chunksize)
+            if dispatch_size is None or dispatch_size<=0:
+                dispatch_size = len(tasks)
+            outstanding_tasks = tasks
+            async_results = []
+            result_index = 0
+            while result_index < len(tasks):
+                # Maybe make a dispatch
+                num_to_yield = len(async_results) - result_index
+                if (num_to_yield <= dispatch_size/2 and 
+                    len(outstanding_tasks) > 0):
+                    task_batch = outstanding_tasks[:dispatch_size]
+                    outstanding_tasks = outstanding_tasks[dispatch_size:]
+                    async_results.extend(pool.map(
+                        task_batch,
+                        _get_callback(None, args_with_err, print_error)))
+                future_to_yield = async_results[result_index]
+                result_index += 1
                 try:
-                    r = future.get()
+                    r = future_to_yield.get()
                 except TaskException:
                     continue
                 yield r
