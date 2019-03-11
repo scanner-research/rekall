@@ -1,3 +1,4 @@
+from collections.abc import MutableMapping
 from types import MethodType
 from tqdm import tqdm
 
@@ -5,7 +6,10 @@ from rekall.interval_set_3d import IntervalSet3D, Interval3D
 from rekall.interval_set_3d_utils import perf_count
 from rekall.video_interval_collection import VideoIntervalCollection as VIC
 
-class DomainIntervalCollection:
+def _empty_set():
+    return IntervalSet3D([])
+
+class DomainIntervalCollection(MutableMapping):
     """
     A DomainIntervalCollection is a grouping of Interval3Ds by some key.
     It is logically a dictionary from key to an IntervalSet3D.
@@ -62,6 +66,18 @@ class DomainIntervalCollection:
         return self._grouped_intervals
     def __setstate__(self, grouped_intervals):
         self._grouped_intervals = grouped_intervals
+
+    # Dictionary Interface
+    def __getitem__(self, key):
+        return self._grouped_intervals.get(key, _empty_set())
+    def __setitem__(self, key, value):
+        self._grouped_intervals[key] = value
+    def __delitem__(self, key):
+        del self._grouped_intervals[key]
+    def __iter__(self):
+        return self._grouped_intervals.__iter__()
+    def __len__(self):
+        return len(self._grouped_intervals)
 
     @classmethod
     def from_iterable(cls, iterable, v_accessor, t_accessor,
