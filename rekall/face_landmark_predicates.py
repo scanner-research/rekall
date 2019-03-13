@@ -1,7 +1,5 @@
-import numpy as np
+""" Face landmark predicates.
 
-"""
-Face landmark predicates.
 Each of these predicates takes in an object that is assumed to have the 
 following structure:
 {
@@ -24,8 +22,11 @@ Simple predicates we have so far:
     looking_right - calculated based on nose direction
 """
 
+import numpy as np
+
 def looking_left(landmarks):
-    """
+    """Whether the face is looking to the left.
+
     Checks whether the bottom landmark on the nose is left of the middle
     of the nose bottom.
     """
@@ -38,7 +39,8 @@ def looking_left(landmarks):
     return nose_bridge[-1][0] < (nose_bottom_x_min + nose_bottom_x_max) / 2
 
 def looking_right(landmarks):
-    """
+    """Whether the face is looking to the right.
+
     Checks whether the bottom landmark on the nose is right of the middle
     of the nose bottom.
     """

@@ -1,4 +1,2 @@
-'''
-Constants used throughout this module.
-'''
+"""Constants used throughout this package."""
 INFTY = "infty"

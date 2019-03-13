@@ -1,3 +1,5 @@
+"""DEPRECATED: Use rekall.interval_set_3d instead."""
+
 import itertools
 from functools import reduce
 from rekall.common import *
@@ -7,7 +9,8 @@ from rekall.logical_predicates import *
 from rekall.merge_ops import *
 
 class Interval:
-    """
+    """DEPRECATED: Use Interval3D in rekall.interval_set_3d instead.
+
     A Interval has a start time, end time, and payload.
     """
     def __init__(self, start, end, payload):
@@ -100,7 +103,8 @@ class Interval:
 
 
 class IntervalList:
-    """
+    """DEPRECATED: Use IntervalSet3D in rekall.interval_set_3d instead.
+
     A IntervalList is a wrapper around a list of Intervals.
 
     IntervalList provides core operations map, fold, join, coalesce, and minus.
