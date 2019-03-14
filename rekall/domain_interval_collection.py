@@ -165,10 +165,8 @@ class DomainIntervalCollection(MutableMapping):
         return cls({key: IntervalSet3D(intervals) for key, intervals in 
             key_to_intervals.items()})
 
-    # TODO: Remove total argument and just use qs.count()
     @classmethod
-    def from_django_qs(cls, qs, schema={},
-            with_payload=None, progress=False, total=None):
+    def from_django_qs(cls, qs, schema={}, with_payload=None, progress=False):
         """Constructs a DomainIntervalCollection from django QuerySet
 
         Args:
@@ -190,7 +188,7 @@ class DomainIntervalCollection(MutableMapping):
                 returns the payload for the interval.
                 If set, will override the 'payload' field of the schema.
             progress (Bool, optional): whether to display a progress bar.
-                Defaults to False
+                Defaults to False.
 
         Returns:
             A DomainIntervalCollection constructed from django QuerySet.
@@ -221,6 +219,9 @@ class DomainIntervalCollection(MutableMapping):
             kwargs['p_accessor'] = with_payload
         elif 'payload' in s:
             kwargs['p_accessor'] = get_accessor(s['payload'])
+        total = None
+        if progress:
+            total = qs.count()
         return cls.from_iterable(qs, v, t,
                 progress=progress, total=total, **kwargs)
 
