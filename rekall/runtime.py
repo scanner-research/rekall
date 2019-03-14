@@ -77,7 +77,6 @@ class RekallRuntimeException(Exception):
     """Exception raised when Runtime encounters error."""
     pass
 
-# TODO: Add a time argument in get() to allow main process to poll.
 class AbstractAsyncTaskResult():
     """Definition of the AsyncTaskResult interface
 
@@ -94,8 +93,12 @@ class AbstractAsyncTaskResult():
         """
         raise NotImplementedError()
 
+    def done(self):
+        """Returns whether the value is ready"""
+        raise NotImplementedError()
+
 class _FutureWrapper(AbstractAsyncTaskResult):
-    """Wraps a future object to throw TaskException."""
+    """Wraps a mp.pool.AsyncResult object to throw TaskException."""
     def __init__(self, future):
         self._f = future
 
@@ -104,6 +107,9 @@ class _FutureWrapper(AbstractAsyncTaskResult):
             return self._f.get()
         except Exception as e:
             raise TaskException() from e
+
+    def done(self):
+        return self._f.ready()
 
 class AbstractWorkerPool():
     """Definition of the WorkerPool interface
@@ -150,6 +156,8 @@ class InlineSingleProcessPool(AbstractWorkerPool):
                 raise TaskException() from e
             self.done()
             return r
+        def done(self):
+            return True
 
     def __init__(self, fn):
         """Initializes with the function to run."""
@@ -373,6 +381,25 @@ def disjoint_domain_combiner(result1, result2):
         "DisjointDomainCombiner used on results"
         " with overlapping domains {0}".format(intersection))
 
+def _pop_future_to_yield(futures):
+    """Polling until a future is ready with exponential backoff"""
+    MAX_WAIT = 1
+    MIN_WAIT = 0.001
+    FACTOR = 1.5
+
+    def grow(wait_time):
+        return min(MAX_WAIT, wait_time * FACTOR)
+
+    from time import sleep
+
+    wait_time = MIN_WAIT
+    while True:
+        for i,f in enumerate(futures):
+            if f.done():
+                return futures.pop(i)
+        sleep(wait_time)
+        wait_time = grow(wait_time)
+
 class Runtime():
     """Manages execution of function on large number of inputs.
 
@@ -529,10 +556,10 @@ class Runtime():
                 dispatch_size = len(tasks)
             outstanding_tasks = tasks
             async_results = []
-            result_index = 0
-            while result_index < len(tasks):
+            num_finished_tasks = 0
+            while num_finished_tasks < len(tasks):
                 # Maybe make a dispatch
-                num_to_yield = len(async_results) - result_index
+                num_to_yield = len(async_results)
                 if (num_to_yield <= dispatch_size/2 and 
                     len(outstanding_tasks) > 0):
                     task_batch = outstanding_tasks[:dispatch_size]
@@ -540,15 +567,18 @@ class Runtime():
                     async_results.extend(pool.map(
                         task_batch,
                         _get_callback(None, args_with_err, print_error)))
-                future_to_yield = async_results[result_index]
-                result_index += 1
+                if randomize:
+                    future_to_yield = _pop_future_to_yield(async_results)
+                else:
+                    future_to_yield = async_results.pop(0)
+                num_finished_tasks += 1
                 try:
                     r = future_to_yield.get()
                 except TaskException:
                     continue
                 yield r
-            if len(args_with_err) > 0:
-                raise RekallRuntimeException(
-                        "The following tasks failed: {0}".format(
-                    args_with_err))
+        if len(args_with_err) > 0:
+            raise RekallRuntimeException(
+                    "The following tasks failed: {0}".format(
+                args_with_err))
 
