@@ -11,8 +11,6 @@ from rekall.logical_predicates import *
 from rekall.merge_ops import * 
 from functools import reduce
 import constraint as constraint
-import multiprocessing as mp
-import cloudpickle
 import copy
 
 class Interval3D:

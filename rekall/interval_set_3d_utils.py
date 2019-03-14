@@ -23,8 +23,6 @@ Performance-related:
 """
 
 from rekall.interval_list import Interval
-import cloudpickle
-import multiprocessing as mp
 from contextlib import contextmanager
 from time import perf_counter
 
@@ -211,59 +209,6 @@ def or_preds(*preds):
                 return True
         return False
     return new_pred
-
-# TODO: Remove this class
-class AsyncWorkDispatcher:
-    """
-    Helper class to dispatch parallelizable work in batches
-    """
-    class _SerializedFunc:
-        def __init__(self, func):
-            self.serialized_func = cloudpickle.dumps(func)
-        def __call__(self, batch):
-            func = cloudpickle.loads(self.serialized_func)
-            return [func(*packed_args) for packed_args in batch]
-
-    def __init__(self, func, total_work, num_workers = mp.cpu_count()):
-        if num_workers <= 1 or total_work <= 1:
-            self.disable_parallel = True
-            self.func = func
-            self.outputs = []
-        else:
-            self.disable_parallel = False
-            self.chunk_size = int(total_work/num_workers)+1
-            self.serialized_func = AsyncWorkDispatcher._SerializedFunc(func)
-            self.pool = mp.Pool(processes=num_workers)
-            self.output_batch_futures = []
-            self.current_batch = []
-
-    def _dispatch(self):
-        self.output_batch_futures.append(
-            self.pool.apply_async(self.serialized_func,
-                args=(self.current_batch,)))
-        self.current_batch = []
-
-    def add_work(self, packed_args):
-        if self.disable_parallel:
-            self.outputs.append(self.func(*packed_args))
-        else:
-            self.current_batch.append(packed_args)
-            if len(self.current_batch) >= self.chunk_size:
-                self._dispatch()
-        return self
-
-    def close(self):
-        if not self.disable_parallel:
-            if len(self.current_batch)>0:
-                self._dispatch() 
-            self.pool.close()
-
-    def get_all_outputs(self):
-        if self.disable_parallel:
-            return self.outputs
-        else:
-            return [r for batch_future in self.output_batch_futures
-                      for r in batch_future.get()]
 
 # Performance profling util
 @contextmanager
