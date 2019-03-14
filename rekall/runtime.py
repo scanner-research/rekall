@@ -42,6 +42,10 @@ WorkerPool classes:
     AbstractWorkerPool: The abstract interface for all WorkerPool
         implementations.
 
+AsyncTaskResult interface:
+    This represents a Future-like object. Custom implementations of WorkerPool
+    interface need to return objects with this interface in `map` method.
+
 Exception classes:
     TaskException: raised when a worker throws during task execution.
     RekallRuntimeException: raised when there is error in the Runtime.
@@ -73,16 +77,34 @@ class RekallRuntimeException(Exception):
     """Exception raised when Runtime encounters error."""
     pass
 
-def _wrap_for_exception(fn):
-    """Catch errors in fn and re-raise it as TaskException"""
-    def wrapped(domains):
+# TODO: Add a time argument in get() to allow main process to poll.
+class AbstractAsyncTaskResult():
+    """Definition of the AsyncTaskResult interface
+
+    This represents a Future-like object. Custom implementations of WorkerPool
+    interface need to return objects with this interface in `map` method.
+    """
+    def get(self):
+        """Returns the value inside the AsyncTaskResult.
+
+        This blocks until the value is ready.
+
+        Raises:
+            TaskException: if the AsyncTaskResult contains error.
+        """
+        raise NotImplementedError()
+
+class _FutureWrapper(AbstractAsyncTaskResult):
+    """Wraps a future object to throw TaskException."""
+    def __init__(self, future):
+        self._f = future
+
+    def get(self):
         try:
-            return fn(domains)
+            return self._f.get()
         except Exception as e:
             raise TaskException() from e
-    return wrapped
 
-# TODO: Define an AsyncTaskResults interface.
 class AbstractWorkerPool():
     """Definition of the WorkerPool interface
     
@@ -103,8 +125,6 @@ class AbstractWorkerPool():
 
         Returns:
             A list of AsyncTaskResults, one for each task in tasks.
-            Each AsyncTaskResult has a get() function to access the task
-            result.
         """
         raise NotImplementedError()
 
@@ -117,7 +137,7 @@ class AbstractWorkerPool():
 
 class InlineSingleProcessPool(AbstractWorkerPool):
     """A single-process implmentation of WorkerPool interface."""
-    class _Lazy():
+    class _Lazy(AbstractAsyncTaskResult):
         """A wrapper that defers the execution until result is requested"""
         def __init__(self, getter, done):
             self.getter = getter
@@ -125,15 +145,15 @@ class InlineSingleProcessPool(AbstractWorkerPool):
         def get(self):
             try:
                 r = self.getter()
-            except TaskException as e:
+            except Exception as e:
                 self.done(e)
-                raise e
+                raise TaskException() from e
             self.done()
             return r
 
     def __init__(self, fn):
         """Initializes with the function to run."""
-        self.fn = _wrap_for_exception(fn)
+        self.fn = fn
 
     def map(self, tasks, done):
         def get_callback(vids):
@@ -164,7 +184,7 @@ def _apply_global_context_as_function(vids):
     fn = GLOBAL_CONTEXT
     return fn(vids)
 
-class ForkedProcessPool():
+class ForkedProcessPool(AbstractWorkerPool):
     """A WorkerPool implementation using forking.
     
     The worker processes will inherit the global context from the main process
@@ -179,7 +199,6 @@ class ForkedProcessPool():
             fn: The function to run in child processes.
             num_workers: Number of child processes to create.
         """
-        fn = _wrap_for_exception(fn)
         self._pool = mp.get_context("fork").Pool(
                 processes=num_workers,
                 initializer=_child_process_init,
@@ -194,11 +213,11 @@ class ForkedProcessPool():
             def error(err):
                 done_callback(vids, err)
             return error
-        return [self._pool.apply_async(
+        return [_FutureWrapper(self._pool.apply_async(
                 _apply_global_context_as_function,
                 args=(task,),
                 callback=get_success_callback(task),
-                error_callback=get_error_callback(task)) for task in tasks]
+                error_callback=get_error_callback(task))) for task in tasks]
 
     def shut_down(self):
         self._pool.terminate()
@@ -210,7 +229,7 @@ def _apply_serialized_function(serialized_func, vids):
     fn = cloudpickle.loads(serialized_func)
     return fn(vids)
 
-class SpawnedProcessPool():
+class SpawnedProcessPool(AbstractWorkerPool):
     """A WorkerPool implementation using spawning.
     
     It creates worker processes by spawning new python interpreters.
@@ -228,7 +247,6 @@ class SpawnedProcessPool():
                 created. It can be used to set up necessary resources in the
                 worker.
         """
-        fn = _wrap_for_exception(fn)
         self._pool = mp.get_context("spawn").Pool(
                 processes=num_workers,
                 initializer=initializer)
@@ -243,11 +261,11 @@ class SpawnedProcessPool():
             def error(err):
                 done_callback(vids, err)
             return error
-        return [self._pool.apply_async(
+        return [_FutureWrapper(self._pool.apply_async(
                 _apply_serialized_function,
                 args=(self._pickled_fn, task),
                 callback=get_success_callback(task),
-                error_callback=get_error_callback(task)) for task in tasks]
+                error_callback=get_error_callback(task))) for task in tasks]
 
     def shut_down(self):
         self._pool.terminate()
