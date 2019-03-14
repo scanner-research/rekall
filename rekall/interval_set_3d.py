@@ -209,7 +209,8 @@ class IntervalSet3D:
     def __repr__(self):
         return str(self._intrvls)
 
-    #TODO: support len function
+    def __len__(self):
+        return len(self._intrvls)
 
     # Sort the intervals in the class.
     def _sort(self):
@@ -236,7 +237,7 @@ class IntervalSet3D:
 
     def size(self):
         """Returns the number of intervals in the set."""
-        return len(self._intrvls)
+        return len(self)
 
     def empty(self):
         """Returns whether the set is empty."""

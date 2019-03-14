@@ -562,6 +562,14 @@ class TestIntervalSet3D(unittest.TestCase):
             ])
         self.assertIntervalSetEq(target, is1.split(split_fn))
 
+    def test_len(self):
+        is1 = IntervalSet3D([
+            Interval3D((1,5)),
+            Interval3D((10,22)),
+            ])
+        self.assertEqual(len(is1), 2)
+        self.assertEqual(is1.size(), 2)
+
     def test_json_conversion(self):
         is1 = IntervalSet3D([
             Interval3D((1,5), payload=5),
