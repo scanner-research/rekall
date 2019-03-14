@@ -52,6 +52,12 @@ class TestInterval3D(unittest.TestCase):
         target = Interval3D((2,2.5),(0,2.5), (0,1.1))
         self.assertIntervalEq(i3, target)
 
+    def test_overlap_time_merge_space_throws(self):
+        i1 = Interval3D((0,1),(0,0.5),(0,0.1))
+        i2 = Interval3D((2,3),(2,2.5),(1,1.1))
+        with self.assertRaises(ValueError):
+            i3 = i1.overlap_time_merge_space(i2)
+
     def test_expand_to_frame(self):
         i1 = Interval3D((0,1),(0.5,0.6),(0.7,0.8)).expand_to_frame()
         self.assertIntervalEq(i1,

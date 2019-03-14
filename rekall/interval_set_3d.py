@@ -110,7 +110,6 @@ class Interval3D:
                 utils.merge_bound,
                 payload_merge_op)
 
-    # TODO: Raise exception instead of returning None.
     def overlap_time_merge_space(self, other, payload_merge_op=payload_first):
         """Combines two intervals by overlapping in time and merging in space.
         
@@ -128,7 +127,9 @@ class Interval3D:
         Returns:
             A new Interval3D that is the temporal overlap and spatial merge
             of self and other.
-            Returns None if the two intervals do not overlap in time.
+
+        Raises:
+            ValueError: If self and other do not overlap in time.
         """
         if utils.T(overlaps())(self, other):
             return self.combine(other,
@@ -137,7 +138,8 @@ class Interval3D:
                     utils.merge_bound,
                     payload_merge_op)
         else:
-            return None
+            raise ValueError("{0} and {1} do not overlap in time".format(
+                self, other))
 
     def expand_to_frame(self):
         """Expands the interval to the full spatial extent.
