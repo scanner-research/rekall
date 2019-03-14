@@ -1,3 +1,52 @@
+"""An Extensible Parallel Runtime Library for Rekall.
+
+Runtime: the entrypoint for running large tasks.
+    Its construction takes a factory function for a worker pool, which are
+    described in the following section.
+
+WorkerPool Factories:
+    inline_pool_factory: A factory for a pool that executes tasks in sequence
+        in the main process.
+    get_spawned_process_pool_factory: Returns a factory function for a pool
+        that creates worker processes by spawning new python interpreters.
+        The worker processes do not inherit any context from the main process.
+    get_forked_process_pool_factory: Returns a factory function for a pool that
+        creates worker processes by forking. The worker processes thus inherits
+        all the global context from the main process such as global variables.
+        However, safely forking a multithreaded program is problematic.
+
+Combiners for Runtime:
+    Runtime.run() is a MapReduce routine where a large task is divided into
+    smaller chunks and each chunk is fed to a worker (the map step).
+    A combiner is responsible for merging the results of each chunk, i.e. the 
+    reduction step. The provided combiners are the following.
+
+    union_combiner: The default combiner. It calls `union` method on the
+        per-chunk results to merge them, assuming the results have type
+        IntervalSet3D or DomainIntervalCollection.
+    disjoint_domain_combiner: A faster combiner than union_combiner which
+        assumes that the results are of type DomainIntervalCollection and
+        every chunk produces its own set of domain keys that are disjoint
+        from results of other chunks.
+
+WorkerPool classes:
+    Besides using the provided factory functions, one can create their own 
+    factory by using the provided WorkerPool classes, or even write their own
+    implementation of the WorkerPool interface, which are described below.
+
+    InlineSingleProcessPool: This worker pool uses the main process to
+        execute tasks in sequence.
+    ForkedProcessPool: This pool uses forking to create worker processes.
+    SpawnedProcessPool: This pool spawns fresh python interpreter processes.
+        It can run custom initializers when creating the child processes.
+    AbstractWorkerPool: The abstract interface for all WorkerPool
+        implementations.
+
+Exception classes:
+    TaskException: raised when a worker throws during task execution.
+    RekallRuntimeException: raised when there is error in the Runtime.
+"""
+
 import cloudpickle
 from math import ceil
 import multiprocessing as mp
@@ -7,15 +56,26 @@ from tqdm import tqdm
 from rekall.interval_set_3d_utils import perf_count
 from rekall.domain_interval_collection import DomainIntervalCollection
 
-# Custom exception type
 class TaskException(Exception):
+    """Exception to throw when a worker encounters error during task.
+
+    Use `raise from` syntex to wrap the exception around the real error.
+    For example:
+        try:
+            ...
+        except Exception as e:
+            raise TaskException() from e
+    """
     def __repr__(self):
         return "TaskException from {0}".format(self.__cause__)
 
 class RekallRuntimeException(Exception):
+    """Exception raised when Runtime encounters error."""
     pass
 
+# TODO: Move this out of Runtime into relevant worker pool implmentations.
 def _wrap_for_exception(fn):
+    """Catch errors in fn and re-raise it as TaskException"""
     def wrapped(domains):
         try:
             return fn(domains)
@@ -23,19 +83,44 @@ def _wrap_for_exception(fn):
             raise TaskException() from e
     return wrapped
 
-# WorkerPool interface
+# TODO: Define an AsyncTaskResults interface.
 class AbstractWorkerPool():
+    """Definition of the WorkerPool interface
+    
+    Notes:
+        A WorkerPool instance is specialized to running one function, which is
+        why the function to execute is not here in the interface but is instead
+        passed to the worker pool factory function.
+    """
     def map(self, tasks, done):
-        raise NotImplementedError()
-    def shut_down(self):
+        """Maps the tasks over the available workers in the pool
+
+        Args:
+            tasks: A list of tasks to execute. Each task is a set of arguments
+                to run the function with. 
+            done: A callback function that is called when any task finishes.
+                It takes the set of arguments for the finished task, and
+                optionally an error that the task encountered if there is one.
+
+        Returns:
+            A list of AsyncTaskResults, one for each task in tasks.
+            Each AsyncTaskResult has a get() function to access the task
+            result.
+        """
         raise NotImplementedError()
 
-# A WorkerPool with one worker: the current process.
+    def shut_down(self):
+        """Clean up the worker pool after all tasks have finished.
+        
+        Implementations should release any resources used by the worker pool.
+        """
+        raise NotImplementedError()
+
 class InlineSingleProcessPool(AbstractWorkerPool):
-    """
-    A single-process implmentation of WorkerPool
-    """
+    """A single-process implmentation of WorkerPool interface."""
+    # TODO: Make Lazy a private class
     class Lazy():
+        """A wrapper that defers the execution until result is requested"""
         def __init__(self, getter, done):
             self.getter = getter
             self.done = done
@@ -49,6 +134,7 @@ class InlineSingleProcessPool(AbstractWorkerPool):
             return r
 
     def __init__(self, fn):
+        """Initializes with the function to run."""
         self.fn = fn
 
     def map(self, tasks, done):
@@ -64,10 +150,12 @@ class InlineSingleProcessPool(AbstractWorkerPool):
                     get_getter(self.fn, task),
                     get_callback(task)) for task in tasks]
 
+    # TODO: use pass
     def shut_down(self):
         return
 
 # Helper functions for creating child processes:
+
 # We set the function to execute as a global variable on the child process
 # to avoid pickling the function.
 def _child_process_init(context):
@@ -80,7 +168,20 @@ def _apply_global_context_as_function(vids):
     return fn(vids)
 
 class ForkedProcessPool():
+    """A WorkerPool implementation using forking.
+    
+    The worker processes will inherit the global context from the main process
+    such as global variables. However, forking a multithreaded program safely 
+    is very tricky. In particular, any global thread pool object in the parent 
+    process is forked but the actual threads are not available in the forked 
+    child processes.
+    """
     def __init__(self, fn, num_workers):
+        """Initializes the instance
+        Args:
+            fn: The function to run in child processes.
+            num_workers: Number of child processes to create.
+        """
         self._pool = mp.get_context("fork").Pool(
                 processes=num_workers,
                 initializer=_child_process_init,
@@ -104,7 +205,7 @@ class ForkedProcessPool():
     def shut_down(self):
         self._pool.terminate()
 
-# When Spawning arguments to initializer are pickled.
+# When spawning, arguments to initializer are pickled.
 # To allow arbitrary lambdas with closure, use cloudpickle to serialize the
 # function to execute
 def _apply_serialized_function(serialized_func, vids):
@@ -112,7 +213,23 @@ def _apply_serialized_function(serialized_func, vids):
     return fn(vids)
 
 class SpawnedProcessPool():
+    """A WorkerPool implementation using spawning.
+    
+    It creates worker processes by spawning new python interpreters.
+    The worker processes do not inherit any context from the main process.
+    In particular, they have no access to the global variables and imported
+    modules in the main process.
+    """
     def __init__(self, fn, num_workers, initializer=None):
+        """Initializes the instance.
+
+        Args:
+            fn: The function to run in child processes.
+            num_workers: Number of child processes to create.
+            initializer: A function to run in the child process after it is 
+                created. It can be used to set up necessary resources in the
+                worker.
+        """
         self._pool = mp.get_context("spawn").Pool(
                 processes=num_workers,
                 initializer=initializer)
@@ -138,24 +255,39 @@ class SpawnedProcessPool():
 
 # WorkerPool Factories
 def inline_pool_factory(fn):
+    """Creates a InlineSingleProcessPool."""
     return InlineSingleProcessPool(fn)
 
-# A WorkerPool that fork()s current process to create children processes.
 def get_forked_process_pool_factory(num_workers=mp.cpu_count()):
+    """Returns a factory for ForkedProcessPool.
+
+    Args:
+        num_workers (optional): Number of child processes to fork.
+            Defaults to the number of CPU cores on the machine.
+    
+    Returns:
+        A factory for ForkedProcessPool.
+    """
     def factory(fn):
         return ForkedProcessPool(fn, num_workers)
     return factory
 
-# A WorkerPool that spawns clean python interpreter process to create
-# children processes.
 def get_spawned_process_pool_factory(num_workers=mp.cpu_count()):
+    """Returns a factory for SpawnedProcessPool.
+
+    Args:
+        num_workers (optional): Number of child processes to spawn.
+            Defaults to the number of CPU cores on the machine.
+    
+    Returns:
+        A factory for SpawnedProcessPool.
+    """
     def factory(fn):
         return SpawnedProcessPool(fn, num_workers)
     return factory
 
 class _WorkerPoolContext():
-    """ Wrapper class to allow `with` syntax
-    """
+    """ Wrapper class to allow `with` syntax on WorkerPools"""
     def __init__(self, pool):
         self._pool = pool
 
@@ -166,6 +298,11 @@ class _WorkerPoolContext():
         self._pool.shut_down()
 
 def _get_callback(pbar, args_with_err, print_error=True):
+    """
+    Returns a callback that, when called after a task finishes, updates the
+    progress bar, and if there is an error, add the task to args_with_err and
+    optionally prints the error to stdout.
+    """
     def callback(task_args, err=None):
         if err is None:
             if pbar is not None:
@@ -178,6 +315,7 @@ def _get_callback(pbar, args_with_err, print_error=True):
     return callback
 
 def _create_tasks(args, chunksize):
+    """Splits args into tasks of `chunksize` each."""
     total = len(args)
     num_tasks = int(ceil(total/chunksize))
     tasks = []
@@ -188,11 +326,25 @@ def _create_tasks(args, chunksize):
     return tasks
 
 def union_combiner(result1, result2):
+    """Combiner that calls union method on the result."""
     return result1.union(result2)
 
 def disjoint_domain_combiner(result1, result2):
-    """ Same as union_combiner but assumes results are 
-    DomainIntervalCollections with disjoint keys so is faster.
+    """ A faster combiner than union_combiner for DomainIntervalCollection.
+        
+    Assumes that the results are of type DomainIntervalCollection and every 
+    chunk produces its own set of domain keys that are disjoint from results of 
+    other chunks.
+
+    Args:
+        result1, result2 (DomainIntervalCollection): partial results from
+            some chunks of total work.
+    
+    Returns:
+        A DomainIntervalCollection that is the union of the two.
+    
+    Raises:
+        RekallRuntimeException: Raised if results have common domain key.
     """
     d1 = result1.get_grouped_intervals()
     d2 = result2.get_grouped_intervals()
@@ -205,31 +357,98 @@ def disjoint_domain_combiner(result1, result2):
         " with overlapping domains {0}".format(intersection))
 
 class Runtime():
-    """
-    Runtime creates a pool of workers to execute a rekall query.
+    """Manages execution of function on large number of inputs.
+
+    Given a function that can return results for a batch of inputs, and a
+    potentially long list of inputs to run the function with, Runtime helps to
+    divide the inputs into small chunks, also called tasks, and dispatches
+    the tasks to a pool of workers created by worker_pool_factory. It also
+    gracefully handles exceptions in workers and can assemble the partial
+    results.
+
+    An example function:
+        def query(video_ids):
+            # Gets the intervals in the input batch of videos
+            frames_with_opposing_faces = ...
+            # Returns a DomainIntervalCollection with video_id as domain key.
+            return frames_with_opposing_faces
+
+        # A list of 100K video_ids
+        ALL_VIDEO_IDS = ...
+
+    In the example, query(ALL_VIDEO_IDS) is not practical to run in one go.
+    To get the same results, one can use Runtime in one of two ways.
+
+    The first way is to dispatch all tasks and wait:
+        # Running the query on all videos, in chunks of 5 on 16 processes.
+        rt = Runtime(get_forked_process_pool_factory(num_workers=16))
+        # Will block until everything finishes
+        # results is a DomainIntervalCollection with all intervals found.
+        results, failed_video_ids = rt.run(
+            query, ALL_VIDEO_IDS, combiner=disjoint_domain_combiner,
+            chunksize=5)
+
+    The second way is to use iterator:
+        # Get an iterator that yields partial results from each chunk of 5.
+        rt = Runtime(get_forked_process_pool_factory(num_workers=16))
+        gen = rt.get_result_iterator(query, ALL_VIDEO_IDS, chunksize=5)
+        # Blocks until the first batch is done.
+        # results_from_one_batch is a DomainIntervalCollection with intervals
+        # found in one task (a chunk of 5 videos).
+        results_from_one_batch = next(gen)
     """
     def __init__(self, worker_pool_factory):
-        """
-        worker_pool_factory should be a function that returns a WorkerPool
+        """Initialized with a WorkerPool Factory
+        
+        Args:
+            worker_pool_factory: A function that takes the query to execute,
+                and returns a worker pool to execute the query.
         """
         self._get_worker_pool = worker_pool_factory
 
     @classmethod
     def inline(cls):
+        """Inline Runtime executes each chunk in sequence in one process."""
         return cls(inline_pool_factory)
 
     def run(self, query, args, combiner=union_combiner,
             randomize=True, chunksize=1,
             progress=False, profile=False,
             print_error=True):
-        """
-        Runs the rekall query on given args.
-        Since args may be long, the runtime may split it into chunks and send
-        each chunk to workers that may run in parallel.
-        `query` is a function from a batch of args to an IntervalSet3D or
-        a DomainIntervalCollection
-        Returns (query_output, args_with_err) where query_output is the same
-        as applying query on args.
+        """Dispatches all tasks to workers and waits until everything finishes.
+
+        See class documentation for an example of how to use run().
+        Exception raised in `query` are suppressed and the unsuccessful subset
+        of `args` is returned at the end. However, such errors can be printed
+        as soon as they occur.
+
+        Args:
+            query: A function that can return partial results for any batch of
+                input arguments.
+            args: A potentially long list of input arguments to execute the
+                query with.
+            combiner (optional): A function that takes two partial results and
+                returns the combination of the two.
+                Defaults to union_combiner which assumes the partial results
+                have a `union` method.
+            randomize (optional): Whether to create and dispatch tasks in
+                random order.
+                Defaults to True.
+            chunksize (optional): The size of the input batch for each task.
+                Defaults to 1.
+            progress (optional): Whether to display a progress bar.
+                Defaults to False.
+            profile (optional): Whether to output wall time of various internal
+                stages to stdout.
+                Defaults to False.
+            print_error (optional): Whether to output task errors to stdout.
+                Defaults to True.
+
+        Returns:
+            A pair (query_output, args_with_err) where
+            query_output: The combined results from successful tasks.
+            args_with_err: A list that is a subset of args that failed to
+                execute.
         """
         query = _wrap_for_exception(query)
         with perf_count("Executing query in Runtime", enable=profile):
@@ -261,19 +480,29 @@ class Runtime():
 
     def get_result_iterator(self, query, args, randomize=True, chunksize=1, 
             print_error=True, dispatch_size=mp.cpu_count()):
-        """
-        Returns a generator for results of running `query` on chunks of `args`
+        """Incrementally dispatches tasks as partial results are consumed.
 
-        Since args may be long, the runtime may split it into chunks and send
-        each chunk to workers that may run in parallel.
-        `query` is a function from a batch of args to an IntervalSet3D or
-        a DomainIntervalCollection
+        See class documentation for an example of how to use 
+        get_result_iterator().
+        Exception raised in `query` are suppressed and if any tasks failed,
+        will raise a RekallRuntimeException after all successful tasks' results
+        have been yielded. However, such errors can be printed as soon as they
+        occur.
 
-        If randomize is False, results are yielded in the same order as args.
-        If dispatch_size > 0, chunks are dispatched in batches lazily as
-        previous results are consumed.
-        If any chunk encountered error, the error is thrown after all
-        successful results are yielded.
+        Args:
+            query, args, randomize, chunksize, print_error: Same as in run().
+            dispatch_size (int, optional): Number of tasks to dispatch at a
+                time. In this mode, tasks are incrementally dispatched
+                as partial results from preivous tasks are yielded.
+                If not positive, will dispatch all tasks at once.
+                Defaults to the number of CPU cores.
+
+        Yields:
+            Partial results from each task.
+
+        Raises:
+            RekallRuntimeException: Raised after all successful task results
+                have been yielded if there have been failed tasks.
         """
         query = _wrap_for_exception(query)
         with _WorkerPoolContext(self._get_worker_pool(query)) as pool:
