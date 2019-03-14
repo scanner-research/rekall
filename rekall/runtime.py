@@ -67,13 +67,12 @@ class TaskException(Exception):
             raise TaskException() from e
     """
     def __repr__(self):
-        return "TaskException from {0}".format(self.__cause__)
+        return "TaskException from {0}".format(repr(self.__cause__))
 
 class RekallRuntimeException(Exception):
     """Exception raised when Runtime encounters error."""
     pass
 
-# TODO: Move this out of Runtime into relevant worker pool implmentations.
 def _wrap_for_exception(fn):
     """Catch errors in fn and re-raise it as TaskException"""
     def wrapped(domains):
@@ -135,7 +134,7 @@ class InlineSingleProcessPool(AbstractWorkerPool):
 
     def __init__(self, fn):
         """Initializes with the function to run."""
-        self.fn = fn
+        self.fn = _wrap_for_exception(fn)
 
     def map(self, tasks, done):
         def get_callback(vids):
@@ -182,6 +181,7 @@ class ForkedProcessPool():
             fn: The function to run in child processes.
             num_workers: Number of child processes to create.
         """
+        fn = _wrap_for_exception(fn)
         self._pool = mp.get_context("fork").Pool(
                 processes=num_workers,
                 initializer=_child_process_init,
@@ -230,6 +230,7 @@ class SpawnedProcessPool():
                 created. It can be used to set up necessary resources in the
                 worker.
         """
+        fn = _wrap_for_exception(fn)
         self._pool = mp.get_context("spawn").Pool(
                 processes=num_workers,
                 initializer=initializer)
@@ -450,7 +451,6 @@ class Runtime():
             args_with_err: A list that is a subset of args that failed to
                 execute.
         """
-        query = _wrap_for_exception(query)
         with perf_count("Executing query in Runtime", enable=profile):
             with _WorkerPoolContext(self._get_worker_pool(query)) as pool:
                 total_work = len(args)
@@ -504,7 +504,6 @@ class Runtime():
             RekallRuntimeException: Raised after all successful task results
                 have been yielded if there have been failed tasks.
         """
-        query = _wrap_for_exception(query)
         with _WorkerPoolContext(self._get_worker_pool(query)) as pool:
             args_with_err = []
             if randomize:
