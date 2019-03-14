@@ -117,8 +117,7 @@ class AbstractWorkerPool():
 
 class InlineSingleProcessPool(AbstractWorkerPool):
     """A single-process implmentation of WorkerPool interface."""
-    # TODO: Make Lazy a private class
-    class Lazy():
+    class _Lazy():
         """A wrapper that defers the execution until result is requested"""
         def __init__(self, getter, done):
             self.getter = getter
@@ -145,13 +144,12 @@ class InlineSingleProcessPool(AbstractWorkerPool):
             def getter():
                 return fn(vids)
             return getter
-        return [InlineSingleProcessPool.Lazy(
+        return [InlineSingleProcessPool._Lazy(
                     get_getter(self.fn, task),
                     get_callback(task)) for task in tasks]
 
-    # TODO: use pass
     def shut_down(self):
-        return
+        pass
 
 # Helper functions for creating child processes:
 
