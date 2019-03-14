@@ -1,3 +1,5 @@
+"""DEPRECATED. Use rekall.domain_interval_collection instead."""
+
 from operator import attrgetter
 from rekall.interval_list import IntervalList
 from rekall.temporal_predicates import *
@@ -9,7 +11,8 @@ from concurrent.futures import ProcessPoolExecutor
 import cloudpickle
 
 class VideoIntervalCollection:
-    """
+    """DEPRECATED. Use DomainIntervalCollection instead.
+
     A VideoIntervalCollection is a wrapper around IntervalLists designed for
     videos. Logically, it contains a mapping from video ID's to IntervalLists.
     It exposes the same interface as an IntervalList.

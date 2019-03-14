@@ -1,9 +1,9 @@
-from rekall.helpers import *
+"""Logical predicates
 
+They take in an optional arity parameter.
 """
-Logical predicates AND, OR, TRUE, FALSE. These take in an optional arity
-parameter.
-"""
+
+from rekall.helpers import *
 
 def and_pred(pred1, pred2, arity=1):
     if arity == 1:

@@ -1,15 +1,15 @@
-from rekall.helpers import *
+"""Predicates on payloads.
 
-"""
-Predicates on payloads. Right now just two predicates that takes in an interval
+Right now just two predicates that takes in an interval
 and a predicate and applies the payload to the predicate (for both binary and
 unary predicates):
-    payload_satisfies_unary(pred) - True if the interval's payload satisfies
+    payload_satisfies(pred, 1) - True if the interval's payload satisfies
         pred
-    payload_staisfies_binary(pred) - True if the two interval's payloads
+    payload_staisfies(pred, 2) - True if the two interval's payloads
         satisfy pred
-To apply pred on a named payload, use payload_satisfies_*(on_name(name, pred))
+To apply pred on a named payload, use payload_satisfies(on_name(name, pred))
 """
+from rekall.helpers import *
 
 def payload_satisfies(pred, arity=1):
     if arity == 1:

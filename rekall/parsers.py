@@ -1,8 +1,10 @@
+"""Payload Parsers"""
+
 from functools import reduce
 
 def dict_payload_parser(accessor, fields):
-    """
-    Parse an object to generate a payload.
+    """Parse an object to generate a payload.
+
     @accesor takes in object and a field name and gets a value.
     @fields is a dict mapping from field names in the payload to field names in
     the object.
@@ -19,9 +21,9 @@ def label_payload_parser(accessor, label):
 
 def bbox_payload_parser(accessor, x1="bbox_x1", y1="bbox_y1", x2="bbox_x2",
         y2="bbox_y2"):
-    """
-    Parses an object to generate a bbox payload. Generates a dict with this
-    structure:
+    """Parses an object to generate a bbox payload.
+    
+    Generates a dict with this structure:
     { "x1": ..., "y1": ..., "x2": ..., "y2": ... }
     @x1, @y1, @x2, @y2 are field names in the object.
     @accessor takes in the object and a field name and gets the value for that
@@ -32,15 +34,12 @@ def bbox_payload_parser(accessor, x1="bbox_x1", y1="bbox_y1", x2="bbox_x2",
     })
 
 def in_array(parser_fn):
-    """
-    Generate a new parser function that wraps a payload result in an array.
+    """Generate a new parser function that wraps a payload result in an array.
     """
     return lambda obj: [parser_fn(obj)]
 
 def merge_dict_parsers(parser_fns):
-    """
-    Generate a new parser function that merges the result of multiple parser
-    functions.
+    """Generate a new parser that merges the result of multiple parsers.
 
     @parser_fns is a list of parser functions. Must parse objects into dicts
     with unique keys.
@@ -50,8 +49,5 @@ def merge_dict_parsers(parser_fns):
             [fn(obj) for fn in parser_fns])
 
 def named_payload(name, parser_fn):
-    """
-    Generates a new parser function that wraps a payload result in a dictionary
-    under `name`.
-    """
+    """Wraps a parser result in a dictionary under given name."""
     return lambda obj: {name: parser_fn(obj)}

@@ -1,6 +1,5 @@
-from constraint import *
+"""DEPRECATED. Use 3D intervals and IntervalSet3D.match instead.
 
-"""
 Spatial predicates on payloads. Assumes that the payload is an array of
 objects with at least x1, y1, x2, y2 fields:
 [
@@ -57,6 +56,8 @@ constructing regions:
         size of the full region, proportional to the full region, and in the
         center of the full region)
 """
+
+from constraint import *
 
 '''Constructing regions'''
 def make_region(x1, y1, x2, y2):

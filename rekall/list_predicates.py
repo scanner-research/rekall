@@ -1,5 +1,6 @@
-"""
-Predicates on lists. Right now just predicates based on length.
+"""Predicates on lists.
+
+Right now just predicates based on length.
     length_exactly(n) - True if length = n
     length_at_least(n) - True if length >= n
     length_at_most(n) - True if length <= n

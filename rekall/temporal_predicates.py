@@ -1,13 +1,10 @@
-from rekall.common import *
-
-"""
-Binary predicates on Temporal Ranges.
+"""Binary predicates on Temporal Ranges.
 
 Before and After:
     These s optionally take a min_dist and max_dist. They check if
-    the distance between intrvl1 and intrvl2 is in the range [min_dist, max_dist] (in
-    the right direction). Note that by default, this includes intervals that
-    meet each other.
+    the distance between intrvl1 and intrvl2 is in the range
+    [min_dist, max_dist] (in the right direction). Note that by default, this
+    includes intervals that meet each other.
 
 OverlapsBefore and OverlapsAfter:
     The strict Allen interval definition of overlapping in either direction.
@@ -16,19 +13,20 @@ OverlapsBefore and OverlapsAfter:
       |-----|
          |-----|
     
-    OverlapsAfter requires that intrvl1 start after intrvl2 (and end after intrvl2).
+    OverlapsAfter requires that intrvl1 start after intrvl2 (and end after
+    intrvl2).
 
 Starts and StartsInv:
-    True if intrvl1 has same start time as intrvl2 and ends before intrvl2 (flip intrvl1 and
-    intrvl2 for the inverse).
+    True if intrvl1 has same start time as intrvl2 and ends before intrvl2 
+    (flip intrvl1 and intrvl2 for the inverse).
 
 Finishes and FinishesInv:
-    True if intrvl1 has the same finish time as intrvl2 and starts before intrvl2 (flip
-    for inverse).
+    True if intrvl1 has the same finish time as intrvl2 and starts before 
+    intrvl2 (flip for inverse).
 
 During and DuringInv:
-    True if intrvl1 starts sintrvlictly after intrvl2 and ends sintrvlictly before intrvl2 (flip
-    for inverse).
+    True if intrvl1 starts sintrvlictly after intrvl2 and ends strictly before
+    intrvl2 (flip for inverse).
 
 MeetsBefore and MeetsAfter:
     True if intrvl1 starts when intrvl2 ends (flip for inverse).
@@ -40,6 +38,9 @@ Overlaps:
     Sugar for a more colloquial version of overlapping. Includes Starts/Inv,
     Finishes/Inv, During/Inv, Equal, and OverlapsBefore/After.
 """
+
+from rekall.common import *
+
 def before(min_dist=0, max_dist=INFTY):
     def fn(intrvl1, intrvl2):
         time_diff = intrvl2.start - intrvl1.end

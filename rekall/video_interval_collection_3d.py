@@ -1,3 +1,5 @@
+"""DEPRECATED. Use rekall.domain_interval_collection instead."""
+
 from rekall.interval_set_3d import Interval3D, IntervalSet3D
 from rekall.video_interval_collection import VideoIntervalCollection as VIC
 from rekall.interval_set_3d_utils import perf_count
@@ -21,7 +23,8 @@ def _worker_func_unary(video):
     return (video, func(map1[video]))
 
 class VideoIntervalCollection3D:
-    """
+    """DEPRECATED. Use DomainIntervalCollection instead.
+
     A VideoIntervalCollection3D is a wrapper around IntervalSet3D designed for
     videos. Logically, it contains a mapping from video ID's to IntervalSet3D.
     It exposes the same interface as an IntervalList.
