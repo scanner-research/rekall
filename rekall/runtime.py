@@ -145,16 +145,16 @@ class InlineSingleProcessPool(AbstractWorkerPool):
     """A single-process implmentation of WorkerPool interface."""
     class _Lazy(AbstractAsyncTaskResult):
         """A wrapper that defers the execution until result is requested"""
-        def __init__(self, getter, done):
+        def __init__(self, getter, done_cb):
             self.getter = getter
-            self.done = done
+            self.done_cb = done_cb
         def get(self):
             try:
                 r = self.getter()
             except Exception as e:
-                self.done(e)
+                self.done_cb(e)
                 raise TaskException() from e
-            self.done()
+            self.done_cb()
             return r
         def done(self):
             return True

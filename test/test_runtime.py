@@ -102,6 +102,14 @@ class TestRuntime(unittest.TestCase):
         for vid, result in zip(vids, gen):
             self.assertCollectionEq(result, TestRuntime.query([vid]))
 
+    def test_inline_iterator(self):
+        vids = list(range(1000))
+        rt = Runtime.inline()
+        gen = rt.get_result_iterator(TestRuntime.query, vids,
+                randomize=True)
+        for result in gen:
+            self.assertCollectionEq(result, TestRuntime.query(result.keys()))
+        
     def test_iterator_error(self):
         vids = list(range(2))
         rt = Runtime(get_spawned_process_pool_factory())
