@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "outDir": "./dist/",
+    "sourceMap": true,
+    "module": "commonjs",
+    "target": "es2017",
+    "jsx": "react",
+    "experimentalDecorators": true,
+    "strict": true,
+    "noImplicitReturns": true
+  },
+  "include": [
+    "./src/**/*"
+  ]
+}
