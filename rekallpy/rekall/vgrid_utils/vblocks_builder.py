@@ -66,6 +66,9 @@ DrawTypes:
 Metadatas:
     Metadata_Flag: Plant a flag marking the temporal interval.
     Metadata_Generic: Show a generic JSON text.
+
+Helpers:
+    build_interval: Build a JSON representation of the rekall interval.
 """
 
 from rekall.interval_set_3d import IntervalSet3D, Interval3D
@@ -132,17 +135,35 @@ class _CustomTrackMixin:
 
     def _build_interval(self, video_id, interval):
         """Helper to build a JSON interval in this track."""
-        return {
-            "bounds": _bounds_in_json(video_id, interval),
-            "data": {
-                "draw_type": self._draw_type(video_id, interval),
-                "metadata": {
-                    name: metadata(video_id, interval)
-                    for name, metadata in self._metadatas.items()
-                },
-            }
-        }
+        return build_interval(video_id, interval,
+                self._draw_type, self._metadatas)
 
+def build_interval(video_id, interval, draw_type, metadatas):
+    """Returns a JSON interval with given draw_type and metadatas.
+
+    Args:
+        video_id (int): Video ID as interval domain.
+        interval (Interval3D): The interval to JSONify.
+        draw_type: A function that takes video_id and Interval3D, and
+            returns the JSON of the object to draw.
+        metadatas: A dictionary from metadata name to function that takes
+            video_id and Interval3D, and returns the JSON of the metadata to
+            display.
+
+    Returns:
+        A JSON interval with video_id as domain and all the draw_types and 
+        metadatas.
+    """
+    return {
+        "bounds": _bounds_in_json(video_id, interval),
+        "data": {
+            "draw_type": draw_type(video_id, interval),
+            "metadata": {
+                name: metadata(video_id, interval)
+                for name, metadata in metadatas.items()
+            },
+        }
+    }
 
 class VideoTrackBuilder(_CustomTrackMixin):
     """Builder of a track for some collection of videos from IntervalSet3D.
