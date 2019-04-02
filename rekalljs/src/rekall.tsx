@@ -39,6 +39,10 @@ export class Bounds {
   time_overlaps(other: Bounds): boolean {
     return this.t1 <= other.t2 && this.t2 >= other.t1;
   }
+
+  static from_json(obj: any): Bounds {
+    return new Bounds(obj.t[0], obj.t[1], new BoundingBox(obj.x[0], obj.x[1], obj.y[0], obj.y[1]), obj.domain);
+  }
 }
 
 export class Interval<T> {
@@ -48,6 +52,10 @@ export class Interval<T> {
   constructor(bounds: Bounds, data: T) {
     this.bounds = bounds;
     this.data = data;
+  }
+
+  static from_json<S>(obj: any, payload_from_json: (o: any) => S): Interval<S> {
+    return new Interval(Bounds.from_json(obj), payload_from_json(obj.payload));
   }
 }
 
@@ -72,7 +80,7 @@ export class IntervalSet<T> {
     return this.intervals;
   }
 
-  static from_json<S>(obj: any): IntervalSet<S> {
-    throw new Error("Not yet implemented");
+  static from_json<S>(obj: any, payload_from_json: (o: any) => S): IntervalSet<S> {
+    return new IntervalSet(obj.map((intvl: any) => Interval.from_json(intvl, payload_from_json)));
   }
 }
