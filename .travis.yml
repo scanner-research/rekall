@@ -12,6 +12,7 @@ matrix:
       before_install: cd rekalljs
       install: npm install && npm run prepublishOnly
       script: npm run test
+      before_deploy: cd rekalljs
       deploy:
         - provider: npm
           email: wcrichto@cs.stanford.edu
