@@ -1,8 +1,3 @@
-# rekall
-Rekall is a spatiotemporal query language.
-It operates over sets of intervals and allows for combining and filtering on
-temporal and spatial predicates.
-
 ## Overview of Modules
 
 ### `rekall.interval_set_3d`
@@ -38,4 +33,3 @@ This module provides a library for efficiently executing rekall queries. Given
 a function that operates on a batch of inputs, the runtime divides the long
 list of inputs into chunks and run each chunk potentially in parallel, and can
 combine the results of each chunk at the end.
-
