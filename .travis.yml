@@ -4,7 +4,8 @@ matrix:
     - language: python
       python: 3.5
       before_install: cd rekallpy
-      install: pip3 install -e --user .
+      install: pip3 install .
+      script: python3 setup.py test
 
     - language: node_js
       node_js: 10
