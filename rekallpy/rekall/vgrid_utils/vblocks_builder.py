@@ -95,9 +95,12 @@ class VideoVBlocksBuilder:
     def build(self):
         """Builds the JSON list of vblocks to feed into VGrid."""
         return [{
-                    name: track.build_for_video(vid)
-                    for name, track in self._tracks.items()
-                } for vid in self._video_ids]
+            'video_id': vid,
+            'interval_dict': {
+                name: track.build_for_video(vid)
+                for name, track in self._tracks.items()
+            },            
+        } for vid in self._video_ids]
 
 class _CustomTrackMixin:
     """Mixin for a TrackBuilder that allows custom draw type and metadata"""
@@ -155,8 +158,11 @@ def build_interval(video_id, interval, draw_type, metadatas):
         metadatas.
     """
     return {
-        "bounds": _bounds_in_json(video_id, interval),
-        "data": {
+        "t": interval.t,
+        "x": interval.x,
+        "y": interval.y,
+        "domain": _video_domain_in_json(video_id),
+        "payload": {
             "draw_type": draw_type(video_id, interval),
             "metadata": {
                 name: metadata(video_id, interval)
@@ -216,8 +222,11 @@ class IntervalVBlocksBuilder:
         for video_id, intervals in collection.items():
             for interval in intervals.get_intervals():
                 output.append({
-                    name: track.build_for_interval(video_id, interval)
-                    for name, track in self._tracks.items()
+                    "video_id": video_id,
+                    "interval_dict": {
+                        name: track.build_for_interval(video_id, interval)
+                        for name, track in self._tracks.items()
+                    },
                 })
         return output
 
@@ -261,7 +270,7 @@ def _video_domain_in_json(video_id):
     """Returns a JSON  Domain_Video object."""
     return {
         "type": "Domain_Video",
-        "value": {
+        "args": {
             "video_id": video_id
         },
     }
@@ -292,7 +301,7 @@ class DrawType_Caption:
     def __call__(self, video_id, interval):
         return {
             "type": "DrawType_Caption",
-            "value": {
+            "args": {
                 "text": self._get_caption(interval)    
             },                    
         }
@@ -334,7 +343,29 @@ class Metadata_Generic:
     def __call__(self, video_id, interval):
         return {
             "type": "Metadata_Generic",
-            "value": {
+            "args": {
                 "data": self._getter(interval)    
             }
+        }
+
+class Metadata_Categorical:
+    """A Metadata that stores categorical values"""
+    def __init__(self, category_name, getter=_get_payload):
+        """Initialize
+
+        Args:
+            category_name (string): Name of the category.
+            getter (optional): A function from Interval3D to the category.
+                Defaults to the payload field
+        """
+        self._category_name = category_name
+        self._getter = getter
+
+    def __call__(self, video_id, interval):
+        return {
+            "type": "Metadata_Categorical",
+            "args": {
+                "category_type": self._category_name,
+                "category": self._getter(interval),
+            },
         }
