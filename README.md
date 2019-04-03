@@ -1,4 +1,4 @@
-# rekall
+# rekall [![Build Status](https://travis-ci.org/scanner-research/rekall.svg?branch=master)](https://travis-ci.org/scanner-research/rekall)
 Rekall is a spatiotemporal query language. It operates over sets of intervals and allows for combining and filtering on temporal and spatial predicates.
 
 Rekall has a primary [Python API](https://github.com/scanner-research/rekall/tree/master/rekallpy) for all the core interval processing operations. Rekall also has a [Javascript API](https://github.com/scanner-research/rekall/tree/master/rekalljs) which we use for the [vgrid](https://github.com/scanner-research/vgrid) video metadata visualization widget.
