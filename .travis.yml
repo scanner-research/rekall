@@ -13,7 +13,7 @@ matrix:
       password:
         secure: GtufzS8JePMkz3kgBfk5jUlEZXHjpFWYs893jU33n2Qcnfvz4ikpPl6xjEv9QCa0XZY5r8h4079NBXPMC3jUnHkEJ5jV4+K1/JlbS4ffTZNs+AIty3fvbUD5URrKKOAP/MTZl//XVWLnWhwjfutEEaza+S7vV/nHnzjGJooEw9FEGBGetTnWOfQXP8jPEu3HmLpjQWYk1Fiqq8YB7sng3FPwEfLtt/zNRzq5wCV5PPbmpAdYtqkBvdiX05xlkya+RsT+O02xjDM97tx+6qGDaLmEd/Mlt2CF/vZ+7M//fT/PbAQHpa+mw7e5kBxFZ1mFQcOfaSqfFKc21iYw/g50MnzxRfTrrssfpGY3zs7xM+Q9JdG9SyVcygTXxKhCQ9NxWFEqjDrgxWB3K45iRqtg1girFsh8ujzNJRltrN3MFep0hQgP+FURnqD633co2Eagr2yLVlwDeD/UBSNpSOsS6wGQFNSmSs1Z1Q1/p3K/pnIRolQkTRMlGuE5FjyRYyXKCa6/5+aMyoh40eZPl1UZv4cKlTTk0SzewmZTM5NVx3i2iBKKFl4RxQyR6lIzV6J7B5r8MkaIm6h+GbF43q4Qct9YsCORL+dgu1FliiMXgV5vCwrv409ywLqHzZFR10WinvndY97YX9657Alpk+NhuTbdxpM787raAdiTYduywW8=
       on:
-        #tags: true
+        tags: true
         distributions: sdist bdist_wheel
 
   - language: node_js
@@ -27,3 +27,5 @@ matrix:
       api_key:
         secure: QUs06lBFyNUVHh7+ph45dJDeo9drgCWng65UR5jMXcT8u6U1BPsQ1fy0+djAn2X9LL1ZWBJK+H+en17w70xInDUW0tRuI1XJ5SFGm+4J0+mPEisG4gygn7+E6bd1gIBqbxthQPJXIJQ1XZ4zRWZOuDliNVfMAn57SSJClP9kiTzV4U3wUG0uyPtlHNekAh5lw5Qj7SMRs0f9S2bnCIrbecKB7k/Cb/++sni8Umso/V0nOOKT+xZtCRRoQJkIUVtgycIhDrOunMDaPns0bqS0rIi6XiUS7CsFy8RSaOU5z2hDuZllMdFAwdiT6A5RcPRuJqVXf6+g7zmqNqRGmJlKupkCzLCgvV1SiSMKXcv88UmYBfUezhL17BZkMBjYatQL/fzNvrpz9iIlgYjoDBjNrK42rf1MCmu7tm1pUbWXCBu9tNDiWwER+qcHBUasugDQdfPrisDJQQiVpLdw1IXu7oXX+Lv5MRlXzgB0SnmjB5lDLs54BjbAmtsMy850V/APm0+KPkbtoV/1Zd0mEw67Wwq5s7O/BBokOf4wrBeUg6Ujh4/85T3UJ3hJ8bssWllV59MSWcfruGmxuUOF8iuTQDvGBNv9BFZOWvZcrLxqP9wLorEGJ1N/egS/3eFBSL4veWCv8iY4m3un+EI8kvGNSK3SFtMZFXVPPQMr9Fa4h1c=
       skip_cleanup: true # Don't reset working directory
+      on:
+        tags: true
