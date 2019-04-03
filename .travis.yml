@@ -1,10 +1,13 @@
 matrix:
   include:
+
     - language: python
       python: 3.5
       before_install: cd rekallpy
       install: pip3 install -e --user .
-    - language: js
+
+    - language: node_js
+      node_js: 10
       before_install: cd rekalljs
       install: npm install && npm run prepublishOnly
       script: npm run test
