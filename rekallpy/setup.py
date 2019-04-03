@@ -2,7 +2,7 @@ from setuptools import setup
 
 if __name__ == "__main__":
     setup(
-        name='rekall',
+        name='rekallpy',
         version='0.1.0',
         description='Spatiotemporal query language',
         url='http://github.com/scanner-research/rekall',
