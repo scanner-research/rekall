@@ -1,8 +1,17 @@
-deploy:
-  - provider: npm
-    email: wcrichto@cs.stanford.edu
-    api_key:
-      secure: QUs06lBFyNUVHh7+ph45dJDeo9drgCWng65UR5jMXcT8u6U1BPsQ1fy0+djAn2X9LL1ZWBJK+H+en17w70xInDUW0tRuI1XJ5SFGm+4J0+mPEisG4gygn7+E6bd1gIBqbxthQPJXIJQ1XZ4zRWZOuDliNVfMAn57SSJClP9kiTzV4U3wUG0uyPtlHNekAh5lw5Qj7SMRs0f9S2bnCIrbecKB7k/Cb/++sni8Umso/V0nOOKT+xZtCRRoQJkIUVtgycIhDrOunMDaPns0bqS0rIi6XiUS7CsFy8RSaOU5z2hDuZllMdFAwdiT6A5RcPRuJqVXf6+g7zmqNqRGmJlKupkCzLCgvV1SiSMKXcv88UmYBfUezhL17BZkMBjYatQL/fzNvrpz9iIlgYjoDBjNrK42rf1MCmu7tm1pUbWXCBu9tNDiWwER+qcHBUasugDQdfPrisDJQQiVpLdw1IXu7oXX+Lv5MRlXzgB0SnmjB5lDLs54BjbAmtsMy850V/APm0+KPkbtoV/1Zd0mEw67Wwq5s7O/BBokOf4wrBeUg6Ujh4/85T3UJ3hJ8bssWllV59MSWcfruGmxuUOF8iuTQDvGBNv9BFZOWvZcrLxqP9wLorEGJ1N/egS/3eFBSL4veWCv8iY4m3un+EI8kvGNSK3SFtMZFXVPPQMr9Fa4h1c=
-    scripts: cd rekalljs
-    # on:
-    #   tags: true
+matrix:
+  include:
+    - language: python
+      python: 3.5
+      before_install: cd rekallpy
+      install: pip3 install -e --user .
+    - language: js
+      before_install: cd rekalljs
+      install: npm install && npm run prepublishOnly
+      script: npm run test
+      deploy:
+        - provider: npm
+          email: wcrichto@cs.stanford.edu
+          api_key:
+            secure: QUs06lBFyNUVHh7+ph45dJDeo9drgCWng65UR5jMXcT8u6U1BPsQ1fy0+djAn2X9LL1ZWBJK+H+en17w70xInDUW0tRuI1XJ5SFGm+4J0+mPEisG4gygn7+E6bd1gIBqbxthQPJXIJQ1XZ4zRWZOuDliNVfMAn57SSJClP9kiTzV4U3wUG0uyPtlHNekAh5lw5Qj7SMRs0f9S2bnCIrbecKB7k/Cb/++sni8Umso/V0nOOKT+xZtCRRoQJkIUVtgycIhDrOunMDaPns0bqS0rIi6XiUS7CsFy8RSaOU5z2hDuZllMdFAwdiT6A5RcPRuJqVXf6+g7zmqNqRGmJlKupkCzLCgvV1SiSMKXcv88UmYBfUezhL17BZkMBjYatQL/fzNvrpz9iIlgYjoDBjNrK42rf1MCmu7tm1pUbWXCBu9tNDiWwER+qcHBUasugDQdfPrisDJQQiVpLdw1IXu7oXX+Lv5MRlXzgB0SnmjB5lDLs54BjbAmtsMy850V/APm0+KPkbtoV/1Zd0mEw67Wwq5s7O/BBokOf4wrBeUg6Ujh4/85T3UJ3hJ8bssWllV59MSWcfruGmxuUOF8iuTQDvGBNv9BFZOWvZcrLxqP9wLorEGJ1N/egS/3eFBSL4veWCv8iY4m3un+EI8kvGNSK3SFtMZFXVPPQMr9Fa4h1c=
+          # on:
+          #   tags: true
