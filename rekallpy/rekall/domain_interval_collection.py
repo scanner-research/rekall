@@ -203,10 +203,10 @@ class DomainIntervalCollection(MutableMapping):
         }
         schema_final.update(schema)
         def get_accessor(field):
-            return lambda row: VIC.django_accessor(row, field)
+            return lambda row: cls.django_accessor(row, field)
         def get_bounds_accessor(field1, field2):
-            return lambda row: (VIC.django_accessor(row, field1),
-                                VIC.django_accessor(row, field2))
+            return lambda row: (cls.django_accessor(row, field1),
+                                cls.django_accessor(row, field2))
         s = schema_final
         v = get_accessor(s['domain'])
         t = get_bounds_accessor(s['t1'], s['t2'])
@@ -224,6 +224,14 @@ class DomainIntervalCollection(MutableMapping):
             total = qs.count()
         return cls.from_iterable(qs, v, t,
                 progress=progress, total=total, **kwargs)
+
+    @staticmethod
+    def django_accessor(row, field):
+        fields = field.split('.')
+        output = row
+        for field in fields:
+            output = VIC.django_accessor(output, field)
+        return output
 
     @staticmethod
     def django_bbox_default_schema():
