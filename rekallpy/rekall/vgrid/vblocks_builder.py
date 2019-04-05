@@ -72,12 +72,28 @@ Helpers:
 """
 
 from rekall.interval_set_3d import IntervalSet3D, Interval3D
+import shlex
+import subprocess as sp
+import json
+import os
 
-class VideoVBlocksBuilder:
+
+class _BlockMetaMixin:
+    def add_video_metadata(self, video_baseurl, video_meta):
+        self._video_meta = [
+            {**v.to_json(), 'path': '{}/{}'.format(video_baseurl, v.path)} 
+            for v in video_meta
+        ]
+
+        return self
+
+
+class VideoVBlocksBuilder(_BlockMetaMixin):
     """Builder of a list of VBlocks, one for each video."""
     def __init__(self):
         self._tracks = {}
         self._video_ids = set([])
+        self._video_meta = []
 
     def add_track(self, track):
         """Adds a track to vblocks.
@@ -94,13 +110,18 @@ class VideoVBlocksBuilder:
 
     def build(self):
         """Builds the JSON list of vblocks to feed into VGrid."""
-        return [{
-            'video_id': vid,
-            'interval_dict': {
-                name: track.build_for_video(vid)
-                for name, track in self._tracks.items()
-            },            
-        } for vid in self._video_ids]
+        return {
+            'interval_blocks': [{
+                'video_id': vid,
+                'interval_dict': {
+                    name: track.build_for_video(vid)
+                    for name, track in self._tracks.items()
+                },            
+            } for vid in self._video_ids],
+            'database': {
+                'videos': self._video_meta
+            }
+        }
 
 class _CustomTrackMixin:
     """Mixin for a TrackBuilder that allows custom draw type and metadata"""
@@ -190,7 +211,7 @@ class VideoTrackBuilder(_CustomTrackMixin):
         self.video_ids = set(collection.keys())
 
         self._collection = collection
-        self._draw_type = lambda *args: None
+        self._draw_type = DrawType_Bbox()
         self._metadatas = {}
 
     def build_for_video(self, video_id):
@@ -199,7 +220,7 @@ class VideoTrackBuilder(_CustomTrackMixin):
         return [self._build_interval(video_id, interval)
                 for interval in intervalset.get_intervals()]
 
-class IntervalVBlocksBuilder:
+class IntervalVBlocksBuilder(_BlockMetaMixin):
     """Builder of a list of VBlocks, one for each interval."""
     def __init__(self):
         self._tracks = {}
@@ -228,7 +249,12 @@ class IntervalVBlocksBuilder:
                         for name, track in self._tracks.items()
                     },
                 })
-        return output
+        return {
+            'interval_blocks': output,
+            'database': {
+                'videos': self._video_meta
+            }
+        }
 
 class IntervalTrackBuilder(_CustomTrackMixin):
     """Builder of a track for single-interval vblocks.
@@ -248,7 +274,7 @@ class IntervalTrackBuilder(_CustomTrackMixin):
         self.name = name
 
         self._intervalset_getter = intervalset_getter
-        self._draw_type = lambda *args: None
+        self._draw_type = DrawType_Bbox()
         self._metadatas = {}
 
     def build_for_interval(self, video_id, interval):
@@ -369,3 +395,70 @@ class Metadata_Categorical:
                 "category": self._getter(interval),
             },
         }
+
+class VideoMetadata:
+    """Metadata about a video.
+
+    The basic metadata is the video path and ID. The ID can be any arbitrary
+    unique number, or a database ID if you have one. If the video path is on
+    your local machine (as opposed to, say, a cloud bucket), then this class
+    can fill in the remaining metadata (width, height, etc.) using ffprobe.
+    """
+
+    def __init__(self, path, id=None, fps=None, num_frames=None, width=None, height=None):
+        if not os.path.isfile(path):
+            raise Exception("Error: path {} does not exist".format(path))
+
+        if fps is None:
+            cmd = 'ffprobe -v quiet -print_format json -show_streams "{}"' \
+                .format(path)
+            outp = sp.check_output(shlex.split(cmd))
+            streams = json.loads(outp)['streams']
+            video_stream = [s for s in streams if s['codec_type'] == 'video'][0]
+            width = video_stream['width']
+            height = video_stream['height']
+            [num, denom] = map(int, video_stream['r_frame_rate'].split('/'))
+            fps = float(num) / float(denom)
+            num_frames = video_stream['nb_frames']
+
+        self.path = path
+        self.id = id
+        self.fps = fps
+        self.num_frames = num_frames
+        self.width = width
+        self.height = height
+
+    def to_json(self):
+        return {
+            'id': self.id,
+            'path': self.path,
+            'num_frames': self.num_frames,
+            'fps': self.fps,
+            'width': self.width,
+            'height': self.height
+        }
+
+class Category:
+    def __init__(self):
+        # TODO
+        pass
+
+class DatabaseBuilder:
+    """Builder for the VGrid metadata database."""
+
+    def __init__(self, video_baseurl):
+        self._video_baseurl = video_baseurl
+        self._videos = None
+
+    def add_category(self, category):
+        # TODO
+        return self
+
+    def build(self):
+        for video in self._videos:
+            video.path = '{}/{}'.format(self._video_baseurl, video.path)
+
+        return {
+            'videos': [v.to_json() for v in self._videos]
+        }
+
