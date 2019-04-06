@@ -412,7 +412,7 @@ class VideoMetadata:
         if fps is None:
             cmd = 'ffprobe -v quiet -print_format json -show_streams "{}"' \
                 .format(path)
-            outp = sp.check_output(shlex.split(cmd))
+            outp = sp.check_output(shlex.split(cmd)).decode('utf-8')
             streams = json.loads(outp)['streams']
             video_stream = [s for s in streams if s['codec_type'] == 'video'][0]
             width = video_stream['width']
