@@ -1,0 +1,10 @@
+version: 2
+sphinx:
+  configuration: rekallpy/docs/conf.py
+python:
+  version: 3.5
+  install:
+    - requirements: rekallpy/docs/requirements.txt
+    - method: setuptools
+      path: rekallpy
+  system_packages: true
