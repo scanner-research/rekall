@@ -5,6 +5,4 @@ python:
   version: 3.5
   install:
     - requirements: rekallpy/docs/requirements.txt
-    - method: setuptools
-      path: rekallpy
   system_packages: true
