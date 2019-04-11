@@ -50,6 +50,43 @@ def false_pred():
         return False
     return new_pred
 
+# Predicates on payloads.
+def payload_satisfies(pred):
+    """This wraps a predicate so it is applied to the payloads of intervals.
+
+    The output function expects one or more Intervals as input (depending on
+    how many arguments ``pred`` expects) and applies the predicate to the
+    payloads of the Intervals instead of the Intervals themselves.
+
+    Arg:
+        pred: The predicate to wrap.
+
+    Returns:
+        An output function that applies ``pred`` to payloads.
+    """
+    def new_pred(*interval_args):
+        return pred(*[i.payload for i in interval_args])
+    return new_pred
+
+def on_key(key, pred):
+    """This wraps a predicate so it is applied to a value in a dict instead of
+    the dict itself.
+
+    The output function expects one or more dicts as input (depending on how
+    many arguments ``pred`` expects) and applies the predicate to ``d[key]``
+    for every dict ``d`` of input.
+
+    Arg:
+        key: The key of the dict to apply the predicate to.
+        pred: The predicate to wrap.
+
+    Returns:
+        An output function that applies ``pred`` to keyed values of dict(s).
+    """
+    def new_pred(*args):
+        return pred(*[arg[key] for arg in args])
+    return new_pred
+
 # Unary bounding box predicates.
 def _area(bbox):
     """Computes area of a 2D bounding box.
