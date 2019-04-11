@@ -553,3 +553,35 @@ def same_value(key, epsilon=0.1):
         ``epsilon``.
     """
     return lambda bbox1, bbox2: abs(bbox1[value_name] - bbox2[value_name]) < epsilon
+
+def inside():
+    """Returns a function that takes two 2D bounding boxes and computes whether
+    the first one is inside the second one.
+
+    The output function takes in two 2D bounding boxes (dicts with keys 'x1',
+    'x2', 'y1', 'y2') and returns ``True`` if the first one is inside the
+    second one (boundaries inclusive).
+
+    Returns:
+        A function that takes two 2D bounding boxes and returns ``True`` if the
+        first one is inside the second one.
+    """
+    return lambda bbox1, bbox2: (
+        bbox2['x1'] >= bbox1['x1'] and
+        bbox2['x2'] <= bbox1['x2'] and
+        bbox2['y1'] >= bbox1['y1'] and
+        bbox2['y2'] <= bbox1['y2'])
+
+def contains():
+    """Returns a function that takes two 2D bounding boxes and computes whether
+    the first one contains the second one.
+
+    The output function takes in two 2D bounding boxes (dicts with keys 'x1',
+    'x2', 'y1', 'y2') and returns ``True`` if the first one contains the
+    second one (boundaries inclusive).
+
+    Returns:
+        A function that takes two 2D bounding boxes and returns ``True`` if the
+        first one contains the second one.
+    """
+    return lambda bbox1, bbox2: inside()(bbox2, bbox1)
