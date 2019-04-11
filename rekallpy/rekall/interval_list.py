@@ -5,7 +5,7 @@ from functools import reduce
 from rekall.common import *
 from rekall.helpers import *
 from rekall.temporal_predicates import *
-from rekall.logical_predicates import *
+from rekall.predicates import *
 from rekall.merge_ops import *
 
 class Interval:
@@ -214,7 +214,7 @@ class IntervalList:
 
     # ============== FUNCTIONS THAT MODIFY SELF ==============
     def coalesce(self, payload_merge_op=payload_first,
-            predicate=true_pred(arity=2)):
+            predicate=true_pred()):
         """
         Recursively merge all overlapping or touching intervals that satisfy
         predicate. predicate must be an equivalence relation over the intervals
@@ -291,7 +291,7 @@ class IntervalList:
         """
         return IntervalList(self.intrvls + other.intrvls)
 
-    def filter_against(self, other, predicate=true_pred(arity=2),
+    def filter_against(self, other, predicate=true_pred(),
             working_window=None):
         """
         Filter the ranges in self against the ranges in other, only keeping the
@@ -324,7 +324,7 @@ class IntervalList:
 
         return IntervalList(output)
 
-    def minus(self, other, recursive_diff = True, predicate = true_pred(arity=2),
+    def minus(self, other, recursive_diff = True, predicate = true_pred(),
             payload_merge_op = payload_first, working_window=None):
         """
         Calculate the difference between the temporal ranges in self and the temporal ranges
@@ -367,7 +367,7 @@ class IntervalList:
         if not recursive_diff:
             return self.join(other, lambda intrvl1, intrvl2:
                     intrvl1.minus(intrvl2, payload_merge_op),
-                    and_pred(overlaps(), predicate, arity=2),
+                    and_pred(overlaps(), predicate, ),
                     working_window)
         else:
             if working_window == None:
@@ -454,7 +454,7 @@ class IntervalList:
             return IntervalList(output)
 
 
-    def overlaps(self, other, predicate = true_pred(arity=2), payload_merge_op =
+    def overlaps(self, other, predicate = true_pred(), payload_merge_op =
             payload_first, working_window=None):
         """
         Get the overlapping intervals between self and other.
@@ -466,9 +466,9 @@ class IntervalList:
         def merge_op(intrvl1, intrvl2):
             return [intrvl1.overlap(intrvl2, payload_merge_op)]
         return self.join(other, merge_op, and_pred(overlaps(), predicate,
-            arity=2), working_window)
+            ), working_window)
 
-    def merge(self, other, predicate = true_pred(arity=2), payload_merge_op =
+    def merge(self, other, predicate = true_pred(), payload_merge_op =
             payload_first, working_window=None):
         """
         Merges pairs of intervals in self and other that satisfy predicate.

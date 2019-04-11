@@ -3,7 +3,7 @@
 from operator import attrgetter
 from rekall.interval_list import IntervalList
 from rekall.temporal_predicates import *
-from rekall.logical_predicates import *
+from rekall.predicates import *
 from rekall.helpers import *
 from rekall.merge_ops import *
 from tqdm import tqdm
@@ -130,7 +130,7 @@ class VideoIntervalCollection:
 
     # ============== FUNCTIONS THAT MODIFY SELF ==============
     def coalesce(self, payload_merge_op=payload_first,
-            predicate=true_pred(arity=2),
+            predicate=true_pred(),
                  parallel=None):
         """ See IntervalList#coalesce for details. """
         if parallel is not None:
@@ -281,7 +281,7 @@ class VideoIntervalCollection:
                 )
                 for video_id in video_ids })
 
-    def filter_against(self, other, predicate=true_pred(arity=2),
+    def filter_against(self, other, predicate=true_pred(),
             working_window=None, parallel=None):
         """
         Inner join on video ID's, computing IntervalList#filter_against.
@@ -305,7 +305,7 @@ class VideoIntervalCollection:
                         for video_id in list(self.intervals.keys())
                         if video_id in list(other.intervals.keys()) }))
 
-    def minus(self, other, recursive_diff = True, predicate=true_pred(arity=2),
+    def minus(self, other, recursive_diff = True, predicate=true_pred(),
             payload_merge_op=payload_first, working_window=None, parallel=None):
         """ Left outer join on video ID's, computing IntervalList#minus. """
         if parallel is not None:
@@ -334,7 +334,7 @@ class VideoIntervalCollection:
                         )
                         for video_id in list(self.intervals.keys()) }))
 
-    def overlaps(self, other, predicate = true_pred(arity=2), payload_merge_op =
+    def overlaps(self, other, predicate = true_pred(), payload_merge_op =
             payload_first, working_window=None):
         """ Inner join on video ID's, computing IntervalList#overlaps. """
         return VideoIntervalCollection(
@@ -346,7 +346,7 @@ class VideoIntervalCollection:
                     for video_id in list(self.intervals.keys())
                     if video_id in list(other.intervals.keys()) }))
 
-    def merge(self, other, predicate = true_pred(arity=2), payload_merge_op =
+    def merge(self, other, predicate = true_pred(), payload_merge_op =
             payload_first, working_window=None, parallel=None):
         """ Inner join on video ID's, computing IntervalList#merge. """
         if parallel is not None:

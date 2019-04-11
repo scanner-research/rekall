@@ -7,7 +7,7 @@ This module provides:
 from rekall.interval_list import Interval
 import rekall.interval_set_3d_utils as utils
 from rekall.temporal_predicates import *
-from rekall.logical_predicates import *
+from rekall.predicates import *
 from rekall.merge_ops import * 
 from functools import reduce
 import constraint as constraint
@@ -912,7 +912,7 @@ class IntervalSet3D:
                 output.append(intrvl)
             else:
                 merge_candidate = output[-1]
-                if utils.T(utils.or_preds(
+                if utils.T(or_pred(
                     overlaps(),
                     before(max_dist=epsilon)))(merge_candidate, intrvl):
                     output[-1] = merge_candidate.merge(

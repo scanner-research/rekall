@@ -185,31 +185,6 @@ def P(pred):
     return new_pred
 
 
-# Adapters for logical combinations of predicates
-def not_pred(pred):
-    """Negates the predicate"""
-    def new_pred(*args):
-        return not pred(*args)
-    return new_pred
-
-def and_preds(*preds):
-    """ANDs the predicates"""
-    def new_pred(*args):
-        for pred in preds:
-            if not pred(*args):
-                return False
-        return True
-    return new_pred
-
-def or_preds(*preds):
-    """ORs the predicates"""
-    def new_pred(*args):
-        for pred in preds:
-            if pred(*args):
-                return True
-        return False
-    return new_pred
-
 # Performance profling util
 @contextmanager
 def perf_count(name, enable=True):

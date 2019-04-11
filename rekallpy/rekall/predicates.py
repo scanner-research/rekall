@@ -13,6 +13,43 @@ Example:
         $ bbox_satisfies_pred = pred(bbox)
 """
 
+# Adapters for logical combinations of predicates
+def not_pred(pred):
+    """Negates the predicate."""
+    def new_pred(*args):
+        return not pred(*args)
+    return new_pred
+
+def and_pred(*preds):
+    """ANDs the predicates."""
+    def new_pred(*args):
+        for pred in preds:
+            if not pred(*args):
+                return False
+        return True
+    return new_pred
+
+def or_pred(*preds):
+    """ORs the predicates."""
+    def new_pred(*args):
+        for pred in preds:
+            if pred(*args):
+                return True
+        return False
+    return new_pred
+
+def true_pred():
+    """Returns a predicate that always returns ``True``."""
+    def new_pred(*args):
+        return True
+    return new_pred
+
+def false_pred():
+    """Returns a predicate that always returns ``False``."""
+    def new_pred(*args):
+        return False
+    return new_pred
+
 # Unary bounding box predicates.
 def _area(bbox):
     """Computes area of a 2D bounding box.
