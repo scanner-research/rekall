@@ -1,12 +1,4 @@
-"""Interval sets.
-
-An Interval is a wrapper around a Bounds instance with a payload.
-
-An IntervalSet is a set of Intervals with a number of composition operations.
-
-This module provides:
-    Interval: Class for a single Interval.
-    IntervalSet: Class for a set of Intervals.
+"""An Interval is a wrapper around a Bounds instance with a payload.
 """
 
 from rekall.merge_ops import *
