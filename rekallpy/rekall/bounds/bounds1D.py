@@ -1,6 +1,7 @@
 """This module defines and implements the Bounds1D one-dimensional bound."""
 
-from rekall.bounds import Bounds
+from rekall.bounds import Bounds, utils
+from rekall.predicates import overlaps
 
 class Bounds1D(Bounds):
     """Object representing a one-dimensional (temporal) bound.
@@ -51,3 +52,38 @@ class Bounds1D(Bounds):
     def primary_axis(self):
         """The primary axis is time."""
         return ('t1', 't2')
+
+    def span(self, other):
+        """Returns the minimum Bound spanning both ``self`` and ``other``.
+        
+        Returns:
+            A single Bounds1D spanning ``self`` and ``other``.
+        """
+        return Bounds1D.fromTuple(utils.bounds_span(
+            (self['t1'], self['t2']), 
+            (other['t1'], other['t2'])
+        ))
+
+    def intersect(self, other):
+        """Returns the bound intersecting ``self`` and ``other``, or
+        ``None`` if the bounds do not overlap.
+
+        Returns:
+            A single Bounds1D covering the intersection of ``self`` and
+            ``other``, or ``None`` if the two bounds do not overlap.
+        """
+        if overlaps()(self, other):
+            return Bounds1D.fromTuple(utils.bounds_intersect(
+                (self['t1'], self['t2']), 
+                (other['t1'], other['t2'])
+            ))
+        else:
+            return None
+
+    def size(self):
+        """Returns the size of this bound."""
+        return utils.bound_size((self['t1'], self['t2']))
+
+    def copy(self):
+        """Returns a copy of this bound."""
+        return Bounds1D(self['t1'], self['t2'])

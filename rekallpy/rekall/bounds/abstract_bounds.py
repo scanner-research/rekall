@@ -12,10 +12,21 @@ class Bounds:
     initialization. This allows fields from the bounds to be referenced using
     ``[]`` notation.
 
-    Each child class should also implement the methods ``__lt__`` for sorting,
-    ``__repr__`` for printing, and ``primary_axis`` to specify a tuple
-    representing the major axis for optimization.
-    For videos, the primary  will typically be ``('t1', 't2')``.
+    Each child class should also implement the following methods:
+    
+    ``__lt__`` for sorting
+
+    ``__repr__`` for printing
+
+    ``primary_axis`` to specify a tuple representing the major axis for
+    optimization. For videos, the primary  will typically be ``('t1', 't2')``.
+
+    ``copy`` for producing a copy of this Bounds
+
+    The ``Bounds`` class comes with a ``combine`` method that takes two Bounds
+    instances and a combiner function and combines them into one Bounds.
+    Child classes may want to implement common combination functions or provide
+    mechanisms to use different combination functions across multiple axes.
 
     The ``Bounds`` class also provides a ``cast`` mechanism to recast
     predicates to use other dimensions. The ``cast`` mechanism takes in a
@@ -90,6 +101,23 @@ class Bounds:
         """Get ``arg`` from ``self.data``."""
         return self.data[arg]
 
+    def __setitem__(self, key, item):
+        """Set ``self.data[key]`` to ``item``."""
+        self.data[key] = item
+
+    def combine(self, other, combiner):
+        """Combines two Bounds into a single new Bound using ``combiner``.
+
+        args:
+            other: The other Bound to combine with.
+            combiner: A function that takes two Bounds as input (``self`` and
+                ``other``) and returns a single new Bound.
+
+        Returns:
+            The output of ``combiner(self, other)``.
+        """
+        return combiner(self, other)
+
     def cast(schema):
         """Return a function that takes in a predicate function and remaps key
         lookups according to ``schema``.
@@ -102,21 +130,15 @@ class Bounds:
         In particular, let ``obj`` be an argument to ``p``. Then for every key
         ``k`` in ``schema``, ``obj[k]`` will be re-mapped to ``obj[schema[k]]``
         in ``p'``.
-
         Example:
             Let's define a simple function that prints the 't' field of an
             object::
-
                 def print_t(obj):
                     print(obj['t'])
-
             Now suppose we have an object with a key of 'x' instead::
-
                 my_obj = { 'x': 1 }
-
             Then we can cast ``print_t`` to print out the 'x' field instead of
             the 't' field::
-
                 >>> cast({'t': 'x'})(print_t)(my_obj)
                 1
         
@@ -124,7 +146,6 @@ class Bounds:
             schema: A ``dict`` representing re-mappings for the target
                 function. For every key ``k`` in ``schema``, ``k`` is re-mapped
                 to ``schema[k]`` in the transformed function.
-
         Returns:
             A function that transforms a predicate function by remapping
             key-value lookups in the predicate function's arguments.
@@ -148,10 +169,21 @@ class Bounds:
         return wrap_pred
 
     def __lt__(self, other):
+        """Method to compare two Bounds. Child classes should implement
+        this."""
         pass
 
     def __repr__(self):
+        """Method to get a string representation of a Bound. Child classes
+        should implement this."""
         pass
 
     def primary_axis(self):
+        """Method to get the primary axis of a Bound for optimizations. Child
+        classes should implement this."""
+        pass
+
+    def copy(self):
+        """Method to get another Bound that has the same data as this Bound.
+        Child classes should implement this."""
         pass
