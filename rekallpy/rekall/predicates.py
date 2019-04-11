@@ -8,9 +8,9 @@ Example:
     2D bounding box's area is at least some value. This is how you would use
     it::
 
-        $ bbox = { 'x1': 0.1, 'x2': 0.3, 'y1': 0.1, 'y2': 0.3 }
-        $ pred = area_at_least(.03)
-        $ bbox_satisfies_pred = pred(bbox)
+        bbox = { 'x1': 0.1, 'x2': 0.3, 'y1': 0.1, 'y2': 0.3 }
+        pred = area_at_least(.03)
+        bbox_satisfies_pred = pred(bbox)
 """
 
 from rekall.common import *
