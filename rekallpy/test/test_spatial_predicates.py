@@ -1,5 +1,5 @@
 from rekall.payload_predicates import *
-from rekall.bbox_predicates import *
+from rekall.predicates import *
 from rekall.spatial_predicates import *
 from rekall.interval_list import Interval
 import unittest

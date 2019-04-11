@@ -4,7 +4,7 @@ from rekall.merge_ops import payload_plus, payload_second
 from rekall.temporal_predicates import (overlaps, before, meets_before, equal,
     during_inv)
     
-from rekall.bbox_predicates import left_of, above, height_at_least
+from rekall.predicates import left_of, above, height_at_least
 import unittest
 from operator import eq
 import json
