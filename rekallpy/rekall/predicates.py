@@ -13,6 +13,8 @@ Example:
         $ bbox_satisfies_pred = pred(bbox)
 """
 
+from rekall.common import *
+
 # Adapters for logical combinations of predicates
 def not_pred(pred):
     """Negates the predicate."""
@@ -86,6 +88,293 @@ def on_key(key, pred):
     def new_pred(*args):
         return pred(*[arg[key] for arg in args])
     return new_pred
+
+# Temporal predicates
+def before(min_dist=0, max_dist=INFTY):
+    """Returns a function that computes whether a temporal interval is before
+    another, optionally filtering the time difference to be between
+    ``min_dist`` and ``max_dist`` (inclusive).
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the time difference between the start of the second interval and the end of
+    the first interval is between ``min_dist`` and ``max_dist``, inclusive.
+
+    Arg:
+        min_dist: The minimum time difference between the two intervals.
+            Negative values are undefined.
+        max_dist: The maximum time difference between the two intervals. If
+            this is ``INFTY``, then the maximum time difference is unbounded.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the first interval is before the second interval.
+    """
+    def fn(intrvl1, intrvl2):
+        time_diff = intrvl2['t1'] - intrvl1['t2']
+        return (time_diff >= min_dist and
+            (max_dist == INFTY or time_diff <= max_dist))
+
+    return fn
+
+def after(min_dist=0, max_dist=INFTY):
+    """Returns a function that computes whether a temporal interval is after
+    another, optionally filtering the time difference to be between
+    ``min_dist`` and ``max_dist`` (inclusive).
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the time difference between the start of the first interval and the end of
+    the second interval is between ``min_dist`` and ``max_dist``, inclusive.
+
+    Arg:
+        min_dist: The minimum time difference between the two intervals.
+            Negative values are undefined.
+        max_dist: The maximum time difference between the two intervals. If
+            this is ``INFTY``, then the maximum time difference is unbounded.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the first interval is after the second interval.
+    """
+    def fn(intrvl1, intrvl2):
+        time_diff = intrvl1['t1'] - intrvl2['t2']
+        return (time_diff >= min_dist and
+            (max_dist == INFTY or time_diff <= max_dist))
+
+    return fn
+
+def overlaps():
+    """Returns a function that computes whether a temporal interval overlaps
+    another in any way (including just at the endpoints).
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the two intervals overlap in any way
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the two intervals overlap in any way.
+    """
+    return lambda intrvl1, intrvl2: ((intrvl1['t1'] < intrvl2['t1'] and intrvl1['t2'] > intrvl2['t1']) or
+            (intrvl1['t1'] < intrvl2['t2'] and intrvl1['t2'] > intrvl2['t2']) or
+            (intrvl1['t1'] <= intrvl2['t1'] and intrvl1['t2'] >= intrvl2['t2']) or
+            (intrvl1['t1'] >= intrvl2['t1'] and intrvl1['t2'] <= intrvl2['t2']))
+
+def overlaps_before():
+    """Returns a function that computes whether a temporal interval has
+    non-zero overlap with another interval, and starts before it.
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the first interval starts before the second interval, and the two intervals
+    have a non-zero amount of overlap.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the first interval starts before the second interval, and
+        the two intervals have non-zero overlap.
+    """
+    return lambda intrvl1, intrvl2: (intrvl1['t2'] > intrvl2['t1'] and intrvl1['t2'] < intrvl2['t2'] and
+            intrvl1['t1'] < intrvl2['t1'])
+
+def overlaps_after():
+    """Returns a function that computes whether a temporal interval has
+    non-zero overlap with another interval, and starts after it.
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the first interval starts after the second interval, and the two intervals
+    have a non-zero amount of overlap.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the first interval starts after the second interval, and
+        the two intervals have non-zero overlap.
+    """
+    return lambda intrvl1, intrvl2: (intrvl1['t1'] > intrvl2['t1'] and intrvl1['t1'] < intrvl2['t2'] and
+            intrvl1['t2'] > intrvl2['t2'])
+
+def starts(epsilon=0):
+    """Returns a function that computes whether a temporal interval has the
+    same start time as another interval (+/- epsilon), and ends before it.
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the first interval starts at the same time as the second interval (+/-
+    ``epsilon``), and the first interval ends before the second interval.
+
+    Args:
+        epsilon: The maximum difference between the start time of the first
+            interval and the start time of the second interval.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the first interval starts at the same time as the second
+        interval, and ends before the second interval ends.
+    """
+    return lambda intrvl1, intrvl2: (abs(intrvl1['t1'] - intrvl2['t1']) <= epsilon
+            and intrvl1['t2'] < intrvl2['t2'])
+
+def starts_inv(epsilon=0):
+    """Returns a function that computes whether a temporal interval has the
+    same start time as another interval (+/- epsilon), and ends before it.
+    This is the inverse of the ``starts`` predicate; it checks whether the
+    second interval starts the first interval.
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the second interval starts at the same time as the first interval (+/-
+    ``epsilon``), and the second interval ends before the first interval.
+
+    Args:
+        epsilon: The maximum difference between the start time of the second
+            interval and the start time of the first interval.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the second interval starts at the same time as the first
+        interval, and ends before the first interval ends.
+    """
+    return lambda intrvl1, intrvl2: (abs(intrvl1['t1'] - intrvl2['t1']) <= epsilon
+            and intrvl2['t2'] < intrvl1['t2'])
+
+def finishes(epsilon=0):
+    """Returns a function that computes whether a temporal interval has the
+    same end time as another interval (+/- epsilon), and starts after it.
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the first interval ends at the same time as the second interval (+/-
+    ``epsilon``), and the first interval starts after the second interval.
+
+    Args:
+        epsilon: The maximum difference between the end time of the first
+            interval and the end time of the second interval.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the first interval ends at the same time as the second
+        interval, and starts after the second interval starts.
+    """
+    return lambda intrvl1, intrvl2: (abs(intrvl1['t2'] - intrvl2['t2']) <= epsilon
+            and intrvl1['t1'] > intrvl2['t1'])
+
+def finishes_inv(epsilon=0):
+    """Returns a function that computes whether a temporal interval has the
+    same end time as another interval (+/- epsilon), and starts after it.
+    This is the inverse of the ``finishes`` predicate; it checks whether the
+    second interval finishes the first interval.
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the second interval ends at the same time as the first interval (+/-
+    ``epsilon``), and the second interval starts after the first interval.
+
+    Args:
+        epsilon: The maximum difference between the end time of the second
+            interval and the end time of the first interval.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the second interval ends at the same time as the first
+        interval, and starts after the first interval starts.
+    """
+    return lambda intrvl1, intrvl2: (abs(intrvl1['t2'] - intrvl2['t2']) <= epsilon
+            and intrvl2['t1'] > intrvl1['t1'])
+
+def during():
+    """Returns a function that computes whether a temporal interval takes place
+    entirely during another temporal interval (i.e. it starts after the other
+    interval starts and ends before the other interval ends).
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the first interval starts strictly after the second interval starts and
+    ends strictly before the second interval ends.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the first interval takes place strictly during the second
+        interval.
+    """
+    return lambda intrvl1, intrvl2: intrvl1['t1'] > intrvl2['t1'] and intrvl1['t2'] < intrvl2['t2']
+
+def during_inv():
+    """Returns a function that computes whether a temporal interval takes place
+    entirely during another temporal interval (i.e. it starts after the other
+    interval starts and ends before the other interval ends).
+    This is the inverse of the ``during`` predicate; it checks whether the
+    second interval takes place during the first interval.
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the second interval starts strictly after the first interval starts and
+    ends strictly before the first interval ends.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the second interval takes place strictly during the first
+        interval.
+    """
+    return lambda intrvl1, intrvl2: intrvl2['t1'] > intrvl1['t1'] and intrvl2['t2'] < intrvl1['t2']
+
+def meets_before(epsilon=0):
+    """Returns a function that computes whether a temporal interval ends at the
+    same time as another interval starts (+/- epsilon).
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the absolute time difference between the end of the first interval and the
+    start of the second interval is less than ``epsilon``.
+
+    Args:
+        epsilon: The maximum time difference between the end of the first
+            interval and the start of the second interval.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the first interval ends at the same time as the second
+        interval starts.
+    """
+    return lambda intrvl1, intrvl2: abs(intrvl1['t2']-intrvl2['t1']) <= epsilon
+
+def meets_after(epsilon=0):
+    """Returns a function that computes whether a temporal interval ends at the
+    same time as another interval starts (+/- epsilon).
+    This is the inverse of the ``meets_before`` predicate; it checks whether
+    the first interval starts when the second interval ends.
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the absolute time difference between the start of the first interval and
+    the end of the second interval is less than ``epsilon``.
+
+    Args:
+        epsilon: The maximum time difference between the start of the first
+            interval and the end of the second interval.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the first interval starts at the same time as the second
+        interval ends.
+    """
+    return lambda intrvl1, intrvl2: abs(intrvl2['t2']-intrvl1['t1']) <= epsilon
+
+def equal():
+    """Returns a function that computes whether two temporal intervals are
+    strictly equal.
+
+    The output function expects two temporal intervals (dicts with keys 't1'
+    and 't2' for the start and end times, respectively). It returns ``True`` if
+    the two intervals have equal start times and equal end times.
+
+    Returns:
+        An output function that takes two temporal intervals and returns
+        ``True`` if the two intervals have equal start times and equal end
+        times.
+    """
+    return lambda intrvl1, intrvl2: intrvl1['t1'] == intrvl2['t1'] and intrvl1['t2'] == intrvl2['t2']
 
 # Unary bounding box predicates.
 def _area(bbox):

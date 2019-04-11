@@ -1,6 +1,6 @@
 from rekall.domain_interval_collection import DomainIntervalCollection
 from rekall.interval_set_3d import Interval3D, IntervalSet3D
-from rekall.temporal_predicates import overlaps
+from rekall.predicates import overlaps
 from rekall.merge_ops import payload_first
 import rekall.interval_set_3d_utils as utils
 import unittest

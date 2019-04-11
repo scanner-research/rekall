@@ -6,7 +6,6 @@ This module provides:
 """
 from rekall.interval_list import Interval
 import rekall.interval_set_3d_utils as utils
-from rekall.temporal_predicates import *
 from rekall.predicates import *
 from rekall.merge_ops import * 
 from functools import reduce

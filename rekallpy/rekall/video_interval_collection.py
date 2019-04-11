@@ -2,7 +2,6 @@
 
 from operator import attrgetter
 from rekall.interval_list import IntervalList
-from rekall.temporal_predicates import *
 from rekall.predicates import *
 from rekall.helpers import *
 from rekall.merge_ops import *

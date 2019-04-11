@@ -1,10 +1,8 @@
 from rekall.interval_set_3d import Interval3D, IntervalSet3D
 import rekall.interval_set_3d_utils as utils
 from rekall.merge_ops import payload_plus, payload_second
-from rekall.temporal_predicates import (overlaps, before, meets_before, equal,
-    during_inv)
-    
-from rekall.predicates import left_of, above, height_at_least
+from rekall.predicates import (overlaps, before, meets_before, equal,
+    during_inv, left_of, above, height_at_least)
 import unittest
 from operator import eq
 import json

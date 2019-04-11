@@ -4,7 +4,6 @@ import itertools
 from functools import reduce
 from rekall.common import *
 from rekall.helpers import *
-from rekall.temporal_predicates import *
 from rekall.predicates import *
 from rekall.merge_ops import *
 

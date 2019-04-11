@@ -1,5 +1,4 @@
 from rekall.predicates import *
-from rekall.temporal_predicates import *
 from rekall.interval_list import Interval
 import unittest
 
