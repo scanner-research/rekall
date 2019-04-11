@@ -585,3 +585,56 @@ def contains():
         first one contains the second one.
     """
     return lambda bbox1, bbox2: inside()(bbox2, bbox1)
+
+# List predicates
+def length_exactly(n):
+    """Returns a function that checks whether a list has length exactly ``n``.
+
+    Args:
+        n: The length to check against.
+
+    Returns:
+        A function that takes in a list ``l`` and returns ``True`` if
+        ``len(l)`` is equal to ``n``.
+    """
+    return lambda l: len(l) == n
+
+def length_at_least(n):
+    """Returns a function that checks whether a list has length at least ``n``.
+
+    Args:
+        n: The length to check against.
+
+    Returns:
+        A function that takes in a list ``l`` and returns ``True`` if
+        ``len(l)`` is greater than or equal to ``n``.
+    """
+    return lambda l: len(l) >= n
+
+def length_at_most(n):
+    """Returns a function that checks whether a list has length less than or
+    equal to ``n``.
+
+    Args:
+        n: The length to check against.
+
+    Returns:
+        A function that takes in a list ``l`` and returns ``True`` if
+        ``len(l)`` is less than or equal to ``n``.
+    """
+    return lambda l: len(l) <= n
+
+def length_between(n1, n2):
+    """Returns a function that checks whether a list's length is between ``n1``
+    and ``n2`` (inclusive).
+
+    Args:
+        n1: The minimum length of the list.
+        n2: The maximum length of the list.
+
+    Returns:
+        A function that takes in a list ``l`` and returns ``True`` if
+        ``len(l)`` is between ``n1`` and ``n2`` (inclusive).
+    """
+    return lambda l: (len(l) >= n1 and len(l) <= n2)
+
