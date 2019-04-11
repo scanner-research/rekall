@@ -206,3 +206,16 @@ class Bounds3D(Bounds):
     def height(self):
         """Returns the height (Y dimension) of the time interval."""
         return utils.bound_size((self['y1'], self['y2']))
+
+    def T_axis():
+        """Returns a tuple representing the time axis."""
+        return ('t1', 't2')
+
+    def X_axis():
+        """Returns a tuple representing the X axis."""
+        return ('x1', 'x2')
+
+    def Y_axis():
+        """Returns a tuple representing the Y axis."""
+        return ('y1', 'y2')
+
