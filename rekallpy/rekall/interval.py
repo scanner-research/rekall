@@ -53,6 +53,9 @@ class Interval:
         """String representation is ``<Interval {bounds} payload:{payload}>``."""
         return "<Interval {} payload:{}>".format(self.bounds, self.payload)
 
+    def __lt__(self, other):
+        return self['bounds'] < other['bounds']
+
     def copy(self):
         """Returns a copy of the Interval."""
         return Interval(self.bounds.copy(), self.payload)
@@ -91,3 +94,15 @@ class Interval:
             return pred(*[i.payload for i in interval_args])
         return new_pred
 
+    def size(self, axis=None):
+        """Get the size of the bounds along some axis.
+        
+        Args:
+            axis (optional): The axis to compute size on. Represented as a pair
+                of co-ordinates, such as ``('t1', 't2')``. Defaults to ``None``,
+                which uses the primary axis of ``self``'s Bounds.
+        
+        Returns:
+            The size of the bounds across some axis.
+        """
+        return self.bounds.size(axis)

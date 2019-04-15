@@ -168,6 +168,21 @@ class Bounds:
 
         return wrap_pred
 
+    def size(self, axis=None):
+        """Get the size of the bounds along some axis.
+        
+        Args:
+            axis (optional): The axis to compute size on. Represented as a pair
+                of co-ordinates, such as ``('t1', 't2')``. Defaults to ``None``,
+                which uses the ``primary_axis`` of ``self``.
+        
+        Returns:
+            The size of the bounds across some axis.
+        """
+        if axis is None:
+            axis = self.primary_axis()
+        return self[axis[1]] - self[axis[0]]
+
     def __lt__(self, other):
         """Method to compare two Bounds. Child classes should implement
         this."""
