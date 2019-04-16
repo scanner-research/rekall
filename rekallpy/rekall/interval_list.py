@@ -5,7 +5,7 @@ from functools import reduce
 from rekall.common import *
 from rekall.helpers import *
 from rekall.predicates import *
-from rekall.merge_ops import *
+from rekall.stdlib.merge_ops import *
 
 class Interval:
     """DEPRECATED: Use Interval3D in rekall.interval_set_3d instead.

@@ -4,7 +4,7 @@ from operator import attrgetter
 from rekall.interval_list import IntervalList
 from rekall.predicates import *
 from rekall.helpers import *
-from rekall.merge_ops import *
+from rekall.stdlib.merge_ops import *
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor
 import cloudpickle

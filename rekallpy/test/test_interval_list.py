@@ -1,5 +1,5 @@
 from rekall.predicates import *
-from rekall.merge_ops import *
+from rekall.stdlib.merge_ops import *
 from rekall.interval_list import Interval, IntervalList
 import unittest
 
