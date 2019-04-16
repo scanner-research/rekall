@@ -18,6 +18,7 @@ to re-group for downstream processing. IntervalSetMapping provides a convenient
 mechanism for dynamic re-grouping.
 """
 from collections.abc import MutableMapping
+from operator import attrgetter
 from types import MethodType
 from tqdm import tqdm
 
@@ -156,18 +157,18 @@ class IntervalSetMapping(MutableMapping):
         return len(self._grouped_intervals)
 
     @classmethod
-    def from_iterable(cls, iterable, key_accessor, bounds_accessor, 
-            payload_accessor=lambda _:None, progress=False, total=None):
-        """Constructs a DomainIntervalCollection from an iterable.
+    def from_iterable(cls, iterable, key_parser, bounds_parser, 
+            payload_parser=lambda _:None, progress=False, total=None):
+        """Constructs an IntervalSetMapping from an iterable.
 
         Args:
             iterable: An iterable of arbitrary elements. Each element will
                 become an interval in the collection.
-            key_accessor: A function that takes an element in iterable and
+            key_parser: A function that takes an element in iterable and
                 returns the key for the interval.
-            bounds_accessor: A function that takes an element in iterable and
+            bounds_parser: A function that takes an element in iterable and
                 returns the bounds for the interval.
-            payload_accessor (optional): A function that takes an element in
+            payload_parser (optional): A function that takes an element in
                 iterable and returns the payload for the interval.
                 Defaults to producing None for all elements.
             progress (Bool, optional): Whether to display a progress bar using
@@ -177,7 +178,7 @@ class IntervalSetMapping(MutableMapping):
                 effect if progress is True. 
 
         Returns:
-            A IntervalSetMapping constructed from iterable and the accessors
+            A IntervalSetMapping constructed from iterable and the parsers
             provided.
 
         Note:
@@ -187,8 +188,8 @@ class IntervalSetMapping(MutableMapping):
         for row in (tqdm(iterable, total=total)
                 if progress and total is not None else tqdm(iterable)
                 if progress else iterable):
-            interval = Interval(bounds_accessor(row), p_accessor(row))
-            key = key_accessor(row)
+            interval = Interval(bounds_parser(row), p_parser(row))
+            key = key_parser(row)
             if key in key_to_intervals:
                 key_to_intervals[key].append(interval)
             else:
