@@ -4,6 +4,7 @@ transform and combine sets of Intervals.
 
 from rekall.bounds import Bounds
 from rekall.interval import Interval
+from rekall.common import INFTY
 from functools import reduce
 import constraint as constraint
 import copy
@@ -716,13 +717,13 @@ class IntervalSet:
             if not intrvls_to_nest.empty() or not filter_empty:
                 return [Interval(
                     intrvlself['bounds'].copy()
-                    payload=(intrvlself['payload'], intrvls_to_nest))]
+                    (intrvlself['payload'], intrvls_to_nest))]
             return []
         return IntervalSet(self._map_with_other_within_time_window(
             other, map_output, time_window))
 
-    def coalesce(self, axis, bounds_merge_op, payload_merge_op=payload_first,
-            epsilon=0):
+    def coalesce(self, axis, bounds_merge_op,
+            payload_merge_op=lambda p1, p2: p1, epsilon=0):
         """Recursively merge all intervals that are touching or overlapping
         along ``axis``.
 
@@ -739,7 +740,8 @@ class IntervalSet:
                 merged version of both of them. Along ``axis``, this function
                 should return a bound that spans the two bounds.
             payload_merge_op (optional): A function that takes in two payloads
-                and merges them.
+                and merges them. Defaults to a function that returns the first
+                of the two payloads.
             epsilon (optional): The slack for judging if Intervals meet or
                 overlap. Must be nonnegative. Defaults to 0 (no slack).
 

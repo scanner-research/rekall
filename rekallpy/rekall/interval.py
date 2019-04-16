@@ -1,8 +1,6 @@
 """An Interval is a wrapper around a Bounds instance with a payload.
 """
 
-from rekall.merge_ops import *
-
 class Interval:
     """A single Interval.
 
@@ -60,14 +58,17 @@ class Interval:
         """Returns a copy of the Interval."""
         return Interval(self.bounds.copy(), self.payload)
 
-    def combine(self, other, bounds_combiner, payload_combiner = payload_first):
+    def combine(self, other, bounds_combiner,
+            payload_combiner=lambda p1, p2: p1):
         """Combines two Intervals into one by separately combining the bounds
         and the payload.
 
         Args:
             other: The other Interval to combine with.
-            bounds_combiner: The function to combine the bounds.
-            payload_combiner: The function to combine the two payloads.
+            bounds_combiner: The function to combine the bounds. Takes two
+                Bounds objects as input and returns one Bounds object.
+            payload_combiner: The function to combine the two payloads. Takes
+                two payload objects as input and returns one payload object.
 
         Returns:
             A new Interval combined using ``bounds_combiner`` and

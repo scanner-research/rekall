@@ -107,7 +107,7 @@ class IntervalSetMapping(MutableMapping):
             "collect_by_interval"]
     OUT_OF_SYSTEM_UNARY_METHODS = ["size", "empty", "fold", "match"]
 
-    def __new__(cls, *args, *kwargs):
+    def __new__(cls, *args, **kwargs):
         """Creates class instance and adds IntervalSet methods on it."""
         instance = super(IntervalSetMapping, cls).__new__(cls)
         for method in cls.UNARY_METHODS:
