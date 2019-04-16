@@ -17,8 +17,24 @@ class IntervalSet:
     Note:
         This class does not obey the uniqueness semantics of a Set.
 
-        INSERT NOTE ABOUT WINDOW OPTIMIZATION HERE
+        When the number of intervals is larger than NUM_INTRVLS_THRESHOLD,
+        binary operations `join`, `collect_by_interval` and `filter_against`
+        will no longer operate on the full cross product of the intervals, and
+        instead only look at pairs that are within a certain neighborhood of
+        each other along the primary axis (the primary axis of the `first`
+        Interval passed in during construction). This neighborhood defaults
+        to DEFAULT_FRACTION of the overall range along that axis of the
+        IntervalSet.
+        
+        Specifically, we compute ``DEFAULT_FRACTION`` of the
+        overall range of that axis and set ``optimization_window`` to that
+        fraction of the range. The optimized operations (``join``,
+        ``collect_by_interval``, and ``filter_against``) only look at pairs
+        whose distance from each other along the primary axis is less than
+        ``optimization_window``.
     """
+    NUM_INTRVLS_THRESHOLD = 1000
+    DEFAULT_FRACTION = 1/100
 
     def __init__(self, intrvls):
         """Initializes IntervalSet with a list of Intervals.
@@ -41,8 +57,6 @@ class IntervalSet:
 
     # Compute the default optimization_window based on the current intervals
     def _get_optimization_window(self):
-        NUM_INTRVLS_THRESHOLD = 1000
-        DEFAULT_FRACTION = 1/100
         n = len(self._intrvls)
         if n > 0:
             max_end = max([i[self._primary_axis[1]] for i in self._intrvls])
