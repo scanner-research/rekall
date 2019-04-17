@@ -23,6 +23,7 @@ from types import MethodType
 from tqdm import tqdm
 
 from rekall.interval_set import IntervalSet
+from rekall.helpers import perf_count
 
 def _empty_set():
     return IntervalSet([])

@@ -45,6 +45,7 @@ class IntervalSet:
             intrvls: a list of Intervals to put in the set.
         """
         self._intrvls = sorted(list(intrvls))
+        self._primary_axis = None
         if len(self._intrvls) > 0:
             self._primary_axis = self._intrvls[0]['bounds'].primary_axis()
             self._optimization_window = self._get_optimization_window()
@@ -149,7 +150,7 @@ class IntervalSet:
             return reduce(reducer, lst, init)
 
     def fold_to_set(self, reducer, init=None, sort_key = None,
-            acc_to_set = lambda acc:IntervalSet3D(acc)):
+            acc_to_set = lambda acc:IntervalSet(acc)):
         """Fold over intervals in the set to produce a new IntervalSet.
 
         The same as `fold` method except it returns a IntervalSet by running
@@ -546,7 +547,7 @@ class IntervalSet:
             See class documentation for more details.
 
         Args:
-            other (IntervalSet3D): The other interval set to filter against.
+            other (IntervalSet): The other interval set to filter against.
             predicate: A function that takes one interval in self and an
                 interval in other and returns a bool.
             window (optional): Restrict interval pairs to those within

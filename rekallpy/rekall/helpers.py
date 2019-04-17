@@ -1,4 +1,5 @@
 import sys
+from contextlib import contextmanager
 
 def panic(message):
     """ Print an error message and exit. """
@@ -69,3 +70,24 @@ def center(bbox=full_frame()):
             bbox['y1'] + height / 4.,
             bbox['x2'] - width / 4.,
             bbox['y2'] - height / 4.)
+
+# Performance profling util
+@contextmanager
+def perf_count(name, enable=True):
+    """Prints wall time for the code block to STDOUT
+
+    Example:
+        with perf_count("test code"):
+            sleep(10)
+        # Writes to stdout:
+        # test code starts.
+        # test code ends after 10.01 seconds
+    """
+    if not enable:
+        yield
+    else:
+        print("{0} starts.".format(name))
+        s = perf_counter()
+        yield
+        t = perf_counter()
+        print("{0} ends after {1:.2f} seconds".format(name, t-s))
