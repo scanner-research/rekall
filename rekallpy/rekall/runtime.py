@@ -23,9 +23,9 @@ Combiners for Runtime:
 
     union_combiner: The default combiner. It calls `union` method on the
         per-chunk results to merge them, assuming the results have type
-        IntervalSet3D or DomainIntervalCollection.
+        IntervalSet or IntervalSetMapping.
     disjoint_domain_combiner: A faster combiner than union_combiner which
-        assumes that the results are of type DomainIntervalCollection and
+        assumes that the results are of type IntervalSetMapping and
         every chunk produces its own set of domain keys that are disjoint
         from results of other chunks.
 
@@ -57,8 +57,8 @@ import multiprocessing as mp
 import random
 from tqdm import tqdm
 
-from rekall.interval_set_3d_utils import perf_count
-from rekall.domain_interval_collection import DomainIntervalCollection
+from rekall.helpers import perf_count
+from rekall import IntervalSetMapping
 
 class TaskException(Exception):
     """Exception to throw when a worker encounters error during task.
@@ -355,18 +355,18 @@ def union_combiner(result1, result2):
     return result1.union(result2)
 
 def disjoint_domain_combiner(result1, result2):
-    """ A faster combiner than union_combiner for DomainIntervalCollection.
+    """ A faster combiner than union_combiner for IntervalSetMapping.
         
-    Assumes that the results are of type DomainIntervalCollection and every 
+    Assumes that the results are of type IntervalSetMapping and every 
     chunk produces its own set of domain keys that are disjoint from results of 
     other chunks.
 
     Args:
-        result1, result2 (DomainIntervalCollection): partial results from
+        result1, result2 (IntervalSetMapping): partial results from
             some chunks of total work.
     
     Returns:
-        A DomainIntervalCollection that is the union of the two.
+        A IntervalSetMapping that is the union of the two.
     
     Raises:
         RekallRuntimeException: Raised if results have common domain key.
@@ -375,7 +375,7 @@ def disjoint_domain_combiner(result1, result2):
     d2 = result2.get_grouped_intervals()
     k1,k2 = set(d1.keys()), set(d2.keys())
     if k1.isdisjoint(k2):
-        return DomainIntervalCollection({**d1, **d2})
+        return IntervalSetMapping({**d1, **d2})
     intersection = k1 & k2
     raise RekallRuntimeException(
         "DisjointDomainCombiner used on results"
@@ -414,7 +414,7 @@ class Runtime():
         def query(video_ids):
             # Gets the intervals in the input batch of videos
             frames_with_opposing_faces = ...
-            # Returns a DomainIntervalCollection with video_id as domain key.
+            # Returns a IntervalSetMapping with video_id as domain key.
             return frames_with_opposing_faces
 
         # A list of 100K video_ids
@@ -427,7 +427,7 @@ class Runtime():
         # Running the query on all videos, in chunks of 5 on 16 processes.
         rt = Runtime(get_forked_process_pool_factory(num_workers=16))
         # Will block until everything finishes
-        # results is a DomainIntervalCollection with all intervals found.
+        # results is a IntervalSetMapping with all intervals found.
         results, failed_video_ids = rt.run(
             query, ALL_VIDEO_IDS, combiner=disjoint_domain_combiner,
             chunksize=5)
@@ -437,7 +437,7 @@ class Runtime():
         rt = Runtime(get_forked_process_pool_factory(num_workers=16))
         gen = rt.get_result_iterator(query, ALL_VIDEO_IDS, chunksize=5)
         # Blocks until the first batch is done.
-        # results_from_one_batch is a DomainIntervalCollection with intervals
+        # results_from_one_batch is a IntervalSetMapping with intervals
         # found in one task (a chunk of 5 videos).
         results_from_one_batch = next(gen)
     """

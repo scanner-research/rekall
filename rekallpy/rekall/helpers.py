@@ -1,5 +1,12 @@
+"""This module defines a collection of helper functions and constants.
+
+Attributes:
+    INFTY: A String representing Infinity for float comparisons in predicates.
+"""
 import sys
 from contextlib import contextmanager
+
+INFTY = "infty"
 
 def panic(message):
     """ Print an error message and exit. """

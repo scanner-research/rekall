@@ -1,23 +1,23 @@
 import unittest
 
-from rekall.interval_set_3d import Interval3D, IntervalSet3D
+from rekall import Interval, IntervalSet, IntervalSetMapping
+from rekall.bounds import Bounds3D
 from rekall.runtime import (Runtime, get_forked_process_pool_factory,
         get_spawned_process_pool_factory, RekallRuntimeException)
-from rekall.domain_interval_collection import DomainIntervalCollection
 
 class TestRuntime(unittest.TestCase):
     @staticmethod
     def dummy_intervalset():
-        return IntervalSet3D([TestRuntime.dummy_interval()])
+        return IntervalSet([TestRuntime.dummy_interval()])
 
     @staticmethod
     def query(vids):
-        return DomainIntervalCollection({
+        return IntervalSetMapping({
             vid: TestRuntime.dummy_intervalset() for vid in vids })
 
     @staticmethod
     def dummy_interval(payload=None):
-        return Interval3D((1,10), payload=payload)
+        return Interval(Bounds3D(1,10), payload=payload)
 
     @staticmethod
     def query_that_throws_at_0(vids):
@@ -26,7 +26,7 @@ class TestRuntime(unittest.TestCase):
             if vid == 0:
                 raise RuntimeError()
             output.append(TestRuntime.dummy_interval(vid))
-        return IntervalSet3D(output)
+        return IntervalSet(output)
 
     def assertCollectionEq(self, c1,c2):
         map1 = c1.get_grouped_intervals()
@@ -37,11 +37,15 @@ class TestRuntime(unittest.TestCase):
             is2 = map2[key]
             self.assertIntervalSetEq(is1,is2)
 
-    def assertIntervalSetEq(self, is1, is2):
-        list1 = [(i.t, i.x, i.y, i.payload) for i in is1.get_intervals()]
-        list2 = [(i.t, i.x, i.y, i.payload) for i in is2.get_intervals()]
-        self.assertEqual(list1, list2)
+    def assertIntervalsEq(self, intrvl1, intrvl2, payload_cmp=None):
+        self.assertEqual(intrvl1['bounds'].data, intrvl2['bounds'].data)
+        self.assertTrue((payload_cmp is None or
+                payload_cmp(intrvl1['payload'], intrvl2['payload'])))
 
+    def assertIntervalSetEq(self, is1, is2, payload_cmp=None):
+        self.assertEqual(is1.size(), is2.size())
+        for i, j in zip(is1.get_intervals(), is2.get_intervals()):
+            self.assertIntervalsEq(i, j)
 
     def test_single_process_runtime(self):
         vids = list(range(1000))

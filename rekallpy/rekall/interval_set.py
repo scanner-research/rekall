@@ -4,7 +4,7 @@ transform and combine sets of Intervals.
 
 from rekall.bounds import Bounds
 from rekall.interval import Interval
-from rekall.common import INFTY
+from rekall.helpers import INFTY
 from rekall.predicates import *
 from functools import reduce
 import constraint as constraint

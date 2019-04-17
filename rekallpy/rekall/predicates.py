@@ -13,7 +13,7 @@ Example:
         bbox_satisfies_pred = pred(bbox)
 """
 
-from rekall.common import *
+from rekall.helpers import INFTY
 
 # Adapters for logical combinations of predicates
 def not_pred(pred):
