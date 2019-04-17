@@ -69,6 +69,22 @@ class Bounds3D(Bounds):
         return Bounds3D(self['t1'], self['t2'], self['x1'], self['x2'],
                 self['y1'], self['y2'])
 
+    def T(pred):
+        """Returns a function that transforms predicates by casting accesses to
+        't1' to 't1' and accesses to 't2' to 't2'. This doesn't actually
+        transform anything, but it's a nice helper function for readability.
+
+        Arg:
+            pred: The predicate to cast.
+
+        Returns:
+            The same predicate as ``pred``.
+        """
+        return Bounds.cast({
+            't1': 't1',
+            't2': 't2'
+        })(pred)
+
     def X(pred):
         """Returns a function that transforms predicates by casting accesses to
         't1' to 'x1' and accesses to 't2' to 'x2'.
@@ -130,6 +146,26 @@ class Bounds3D(Bounds):
             't1': 'y1',
             't2': 'y2'
         })(pred)
+
+    def XY(pred):
+        """Returns a function that transforms predicates by casting accesses to
+        'x1' to 'x1', 'x2' to 'x2', 'y1' to 'y1', and 'y2' to 'y2'. This
+        doesn't actually transform anything, but it's a nice helper function
+        for readability.
+
+        Arg:
+            pred: The predicate to cast.
+
+        Returns:
+            The same predicate as ``pred``.
+        """
+        return Bounds.cast({
+            'x1': 'x1',
+            'x2': 'x2',
+            'y1': 'y1',
+            'y2': 'y2'
+        })(pred)
+
 
     def combine_per_axis(self, other, t_combiner, x_combiner, y_combiner):
         """Combines two Bounds using a one-dimensional Combiner function for

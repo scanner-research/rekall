@@ -88,6 +88,6 @@ class Bounds1D(Bounds):
         """Returns a copy of this bound."""
         return Bounds1D(self['t1'], self['t2'])
 
-    def T_axis():
+    def T():
         """Returns a tuple representing the time axis."""
         return ('t1', 't2')

@@ -5,6 +5,7 @@ transform and combine sets of Intervals.
 from rekall.bounds import Bounds
 from rekall.interval import Interval
 from rekall.common import INFTY
+from rekall.predicates import *
 from functools import reduce
 import constraint as constraint
 import copy
@@ -62,8 +63,8 @@ class IntervalSet:
         if n > 0:
             max_end = max([i[self._primary_axis[1]] for i in self._intrvls])
             min_start = min([i[self._primary_axis[0]] for i in self._intrvls])
-            if n > NUM_INTRVLS_THRESHOLD:
-                return (max_end - min_start) * DEFAULT_FRACTION
+            if n > IntervalSet.NUM_INTRVLS_THRESHOLD:
+                return (max_end - min_start) * IntervalSet.DEFAULT_FRACTION
             else:
                 return max_end - min_start
         else:
@@ -396,7 +397,7 @@ class IntervalSet:
                         end = first_interval_after_start[axis[0]]
                         new_start = first_interval_after_start[axis[1]]
                     if end > start:
-                        new_bounds = intrvl['bounds']
+                        new_bounds = intrvl['bounds'].copy()
                         new_bounds[axis[0]] = start
                         new_bounds[axis[1]] = end
                         output.append(Interval(new_bounds, intrvl['payload']))
@@ -411,7 +412,10 @@ class IntervalSet:
         def map_output(intrvl, overlapped):
             # Take only nontrivial overlaps
             to_subtract = sorted(
-                [i for i in overlapped if i.size(axis) >0],
+                [i for i in overlapped if (i.size(axis) > 0 and
+                    Bounds.cast({'t1': axis[0], 't2': axis[1]})(overlaps())
+                    (intrvl, i)
+                )],
                 key = lambda i: (i[axis[0]], i[axis[1]]))
             if len(to_subtract) == 0:
                 return [intrvl.copy()]
@@ -538,7 +542,7 @@ class IntervalSet:
 
         Note:
             We do not check the full cross-product of self and other and
-            instead only check pairs that are within time_window of each other.
+            instead only check pairs that are within window of each other.
             See class documentation for more details.
 
         Args:
@@ -560,7 +564,7 @@ class IntervalSet:
                 if predicate(intrvlself, intrvlother):
                     return [intrvlself.copy()]
             return []
-        return IntervalSet(self._map_with_other_within_time_window(
+        return IntervalSet(self._map_with_other_within_primary_axis_window(
             other, map_output, window))
 
     def map_payload(self, fn):
@@ -598,8 +602,10 @@ class IntervalSet:
             new_bounds = b.copy()
             new_bounds[axis[0]] -= window
             new_bounds[axis[1]] += window
+            return new_bounds
         return self.map(lambda intrvl: Interval(
-            dilate_bounds(intrvl['bounds']), intrvl['payload']))
+            dilate_bounds(intrvl['bounds'], window, axis),
+            intrvl['payload']))
 
     def filter_size(self, min_size=0, max_size=INFTY, axis=None):
         """Filter the intervals by length of the bounds along some axis.
@@ -620,7 +626,7 @@ class IntervalSet:
         if axis is None:
             axis = self._primary_axis
         return self.filter(lambda intrvl: intrvl.size(axis) >= min_size and(
-            max_size==INFTY or val<=max_size))
+            max_size==INFTY or intrvl.size(axis)<=max_size))
 
     def group_by_axis(self, axis, output_bounds):
         """Group intervals by a particular axis.
@@ -716,11 +722,11 @@ class IntervalSet:
                 i for i in intrvlothers if predicate(intrvlself, i)])
             if not intrvls_to_nest.empty() or not filter_empty:
                 return [Interval(
-                    intrvlself['bounds'].copy()
+                    intrvlself['bounds'].copy(),
                     (intrvlself['payload'], intrvls_to_nest))]
             return []
-        return IntervalSet(self._map_with_other_within_time_window(
-            other, map_output, time_window))
+        return IntervalSet(self._map_with_other_within_primary_axis_window(
+            other, map_output, window))
 
     def coalesce(self, axis, bounds_merge_op,
             payload_merge_op=lambda p1, p2: p1, epsilon=0):

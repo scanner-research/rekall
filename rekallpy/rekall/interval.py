@@ -43,9 +43,10 @@ class Interval:
         """
         if key == 'bounds':
             self.bounds = item
-        if key == 'payload':
+        elif key == 'payload':
             self.payload = item
-        self.bounds[key] = item
+        else:
+            self.bounds[key] = item
 
     def __repr__(self):
         """String representation is ``<Interval {bounds} payload:{payload}>``."""
