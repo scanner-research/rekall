@@ -188,8 +188,6 @@ class TestIntervalSet(unittest.TestCase):
             Interval(Bounds3D(7,9), payload=2),
             Interval(Bounds3D(12,15), payload=2),
             ])
-        print(is3)
-        print(target)
         self.assertIntervalSetEq(is3, target, eq)
 
     def test_minus_everything(self):
@@ -252,8 +250,6 @@ class TestIntervalSet(unittest.TestCase):
             Interval(Bounds3D(4,4)),
             Interval(Bounds3D(10,10)),
             ])
-        print(is3)
-        print(target)
         self.assertIntervalSetEq(is3, target)
 
         is4 = is2.minus(is1)

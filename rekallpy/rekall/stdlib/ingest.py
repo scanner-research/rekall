@@ -163,7 +163,7 @@ def ism_from_iterable_with_schema_bounds3D(iterable, key_accessor,
     def bounds_parser(item):
         args = [
             key_accessor(item, schema_final['t1']),
-            key_accessor(item, schema_final['t2']))
+            key_accessor(item, schema_final['t2'])
         ]
         kwargs = {}
         for k in ['x1', 'x2', 'y1', 'y2']:
