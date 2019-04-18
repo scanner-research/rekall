@@ -9,7 +9,7 @@ if __name__ == "__main__":
         author='Dan Fu',
         author_email='danfu@cs.stanford.edu',
         license='Apache 2.0',
-        packages=['rekall'],
+        packages=['rekall', 'rekall.bounds', 'rekall.stdlib'],
         install_requires=['python-constraint', 'tqdm', 'cloudpickle'],
         setup_requires=['pytest-runner'],
         tests_require=['pytest'],
