@@ -1,7 +1,7 @@
-rekall.interval\_list module
+rekall.stdlib.parsers module
 ============================
 
-.. automodule:: rekall.interval_list
+.. automodule:: rekall.stdlib.parsers
     :members:
     :undoc-members:
     :show-inheritance:

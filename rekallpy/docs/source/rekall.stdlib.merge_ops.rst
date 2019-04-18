@@ -1,7 +1,7 @@
-rekall.interval\_set\_3d module
+rekall.stdlib.merge\_ops module
 ===============================
 
-.. automodule:: rekall.interval_set_3d
+.. automodule:: rekall.stdlib.merge_ops
     :members:
     :undoc-members:
     :show-inheritance:

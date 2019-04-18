@@ -100,7 +100,9 @@ class IntervalSetMapping(MutableMapping):
             performed on the two IntervalSets with the same key. See
             IntervalSet documentation for arguments and behavior for each
             method.
-        OUT_OF_SYSTEM_UNARY_METHODS: List of methods that 
+        OUT_OF_SYSTEM_UNARY_METHODS: List of methods that IntervalSetMapping
+            reflects from IntervalSet and that will return a dictionary
+            mapping from IntervalSet keys to return values of the methods.
     """
     UNARY_METHODS = ["filter_size", "map", "filter", "group_by", "fold_to_set",
             "map_payload", "dilate", "group_by_axis", "coalesce", "split"]

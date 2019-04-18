@@ -326,17 +326,16 @@ class IntervalSet:
         The difference between two intervals can produce up to two new
         intervals.
 
-        For example, suppose the following interval is in self:
+        Suppose we try to subtract two sets of intervals from each other::
 
-        |--------------------------------------------------------|
+            # Suppose the following interval is in self
+            |--------------------------------------------------------|
 
-        and that the following two intervals are in other:
-
-                  |--------------|     |----------------|
-        
-        this function will produce three intervals:
-
-        |---------|              |-----|                |--------|
+            # and that the following two intervals are in other
+                      |--------------|     |----------------|
+    
+            # this function will produce three intervals
+            |---------|              |-----|                |--------|
 
         If an interval in self overlaps no pairs in other along the temporal
         dimension, then the interval is reproduced in the output.
@@ -429,11 +428,11 @@ class IntervalSet:
     def match(self, pattern, exact=False):
         """Pattern matching among the intervals in the set.
 
-        A pattern is a list of constraints, where each constraint is a pair
-          (names, predicates)
-          A name is a string that names the variable in the constraint.
-          A predicate is a function that takes len(names) Interval3Ds as
-             arguments and returns True or False.
+        A pattern is a list of constraints, where each constraint is a pair of
+        ``(names, predicates)``.
+        A name is a string that names the variable in the constraint.
+        A predicate is a function that takes ``len(names)`` Intervals as
+        arguments and returns ``True`` or ``False``.
 
         A solution is a directionary of assignments, where the key is the name
         of the variable defined in the pattern and the key is the interval in
@@ -441,21 +440,23 @@ class IntervalSet:
         solution will satisfy all constraints in the pattern.
 
         Example:
-            pattern = [
-                (["harry"], [XY(height_at_least(0.5)), name_is("harry")]),
-                (["ron"], [XY(height_at_least(0.5)), name_is("ron")]),
-                (["harry","ron"], [XY(same_height()), XY(left_of())]),
-            ]
+            Here's a simple example of matching a spatial pattern::
 
-            # solutions are cases in intervalset where harry and ron are at
-            # least half the screen height and have the same height and harry
-            # is on the left of ron.
-            solutions = intervalset.match(pattern)
+                pattern = [
+                    (["harry"], [XY(height_at_least(0.5)), name_is("harry")]),
+                    (["ron"], [XY(height_at_least(0.5)), name_is("ron")]),
+                    (["harry","ron"], [XY(same_height()), XY(left_of())])
+                ]
 
-            # solutions == [
-            #   {"harry": Interval(...), "ron": Interval(...)},
-            #   {"harry": Interval(...), "ron": Interval(...)},
-            # ]
+                # solutions are cases in intervalset where harry and ron are at
+                # least half the screen height and have the same height and
+                # harry is on the left of ron.
+                solutions = intervalset.match(pattern)
+
+                # solutions == [
+                #   {"harry": Interval(...), "ron": Interval(...)},
+                #   {"harry": Interval(...), "ron": Interval(...)},
+                # ]
 
         Args:
             pattern: A pattern specified by a list of constraints. See above
@@ -637,8 +638,9 @@ class IntervalSet:
         to the co-ordinate values for the group. The payload is an IntervalSet
         containing all the intervals in the group.
 
-        Example:
-            is = IntervalSet([
+        Example::
+
+            iset = IntervalSet([
                 Interval(Bounds3D(0, 1, 0.5, 0.75, 0.5, 0.75)),
                 Interval(Bounds3D(0, 1, 0.3, 0.75, 0.1, 0.3)),
                 Interval(Bounds3D(0, 2, 0.1, 0.7, 0.1, 0.2)),
@@ -646,7 +648,7 @@ class IntervalSet:
                 Interval(Bounds3D(1, 2, 0.6, 0.75, 0.1, 0.2))
             ])
 
-            is_grouped = is.group_by_axis(('t1', 't2'),
+            is_grouped = iset.group_by_axis(('t1', 't2'),
                 Bounds3D(0, 1, 0, 1, 0, 1))
 
             # This is what is_grouped looks like
