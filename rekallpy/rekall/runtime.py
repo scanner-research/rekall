@@ -5,15 +5,18 @@ Runtime: the entrypoint for running large tasks.
     described in the following section.
 
 WorkerPool Factories:
-    inline_pool_factory: A factory for a pool that executes tasks in sequence
-        in the main process.
-    get_spawned_process_pool_factory: Returns a factory function for a pool
-        that creates worker processes by spawning new python interpreters.
+    inline_pool_factory
+        A factory for a pool that executes tasks in sequence in the main
+        process.
+    get_spawned_process_pool_factory
+        Returns a factory function for a pool that creates worker processes by
+        spawning new python interpreters.
         The worker processes do not inherit any context from the main process.
-    get_forked_process_pool_factory: Returns a factory function for a pool that
-        creates worker processes by forking. The worker processes thus inherits
-        all the global context from the main process such as global variables.
-        However, safely forking a multithreaded program is problematic.
+    get_forked_process_pool_factory
+        Returns a factory function for a pool that creates worker processes by
+        forking. The worker processes thus inherits all the global context from
+        the main process such as global variables. However, safely forking a
+        multithreaded program is problematic.
 
 Combiners for Runtime:
     Runtime.run() is a MapReduce routine where a large task is divided into
@@ -21,11 +24,13 @@ Combiners for Runtime:
     A combiner is responsible for merging the results of each chunk, i.e. the 
     reduction step. The provided combiners are the following.
 
-    union_combiner: The default combiner. It calls `union` method on the
+    union_combiner
+        The default combiner. It calls `union` method on the
         per-chunk results to merge them, assuming the results have type
-        IntervalSet3D or DomainIntervalCollection.
-    disjoint_domain_combiner: A faster combiner than union_combiner which
-        assumes that the results are of type DomainIntervalCollection and
+        IntervalSet or IntervalSetMapping.
+    disjoint_domain_combiner
+        A faster combiner than union_combiner which
+        assumes that the results are of type IntervalSetMapping and
         every chunk produces its own set of domain keys that are disjoint
         from results of other chunks.
 
@@ -34,21 +39,26 @@ WorkerPool classes:
     factory by using the provided WorkerPool classes, or even write their own
     implementation of the WorkerPool interface, which are described below.
 
-    InlineSingleProcessPool: This worker pool uses the main process to
+    InlineSingleProcessPool
+        This worker pool uses the main process to
         execute tasks in sequence.
-    ForkedProcessPool: This pool uses forking to create worker processes.
-    SpawnedProcessPool: This pool spawns fresh python interpreter processes.
+    ForkedProcessPool
+        This pool uses forking to create worker processes.
+    SpawnedProcessPool
+        This pool spawns fresh python interpreter processes.
         It can run custom initializers when creating the child processes.
-    AbstractWorkerPool: The abstract interface for all WorkerPool
-        implementations.
+    AbstractWorkerPool
+        The abstract interface for all WorkerPool implementations.
 
 AsyncTaskResult interface:
     This represents a Future-like object. Custom implementations of WorkerPool
     interface need to return objects with this interface in `map` method.
 
 Exception classes:
-    TaskException: raised when a worker throws during task execution.
-    RekallRuntimeException: raised when there is error in the Runtime.
+    TaskException
+        raised when a worker throws during task execution.
+    RekallRuntimeException
+        raised when there is error in the Runtime.
 """
 
 import cloudpickle
@@ -57,14 +67,16 @@ import multiprocessing as mp
 import random
 from tqdm import tqdm
 
-from rekall.interval_set_3d_utils import perf_count
-from rekall.domain_interval_collection import DomainIntervalCollection
+from rekall.helpers import perf_count
+from rekall import IntervalSetMapping
 
 class TaskException(Exception):
     """Exception to throw when a worker encounters error during task.
 
     Use `raise from` syntex to wrap the exception around the real error.
-    For example:
+
+    Example::
+
         try:
             ...
         except Exception as e:
@@ -355,18 +367,18 @@ def union_combiner(result1, result2):
     return result1.union(result2)
 
 def disjoint_domain_combiner(result1, result2):
-    """ A faster combiner than union_combiner for DomainIntervalCollection.
+    """ A faster combiner than union_combiner for IntervalSetMapping.
         
-    Assumes that the results are of type DomainIntervalCollection and every 
+    Assumes that the results are of type IntervalSetMapping and every 
     chunk produces its own set of domain keys that are disjoint from results of 
     other chunks.
 
     Args:
-        result1, result2 (DomainIntervalCollection): partial results from
+        result1, result2 (IntervalSetMapping): partial results from
             some chunks of total work.
     
     Returns:
-        A DomainIntervalCollection that is the union of the two.
+        A IntervalSetMapping that is the union of the two.
     
     Raises:
         RekallRuntimeException: Raised if results have common domain key.
@@ -375,7 +387,7 @@ def disjoint_domain_combiner(result1, result2):
     d2 = result2.get_grouped_intervals()
     k1,k2 = set(d1.keys()), set(d2.keys())
     if k1.isdisjoint(k2):
-        return DomainIntervalCollection({**d1, **d2})
+        return IntervalSetMapping({**d1, **d2})
     intersection = k1 & k2
     raise RekallRuntimeException(
         "DisjointDomainCombiner used on results"
@@ -410,11 +422,12 @@ class Runtime():
     gracefully handles exceptions in workers and can assemble the partial
     results.
 
-    An example function:
+    An example function::
+
         def query(video_ids):
             # Gets the intervals in the input batch of videos
             frames_with_opposing_faces = ...
-            # Returns a DomainIntervalCollection with video_id as domain key.
+            # Returns a IntervalSetMapping with video_id as domain key.
             return frames_with_opposing_faces
 
         # A list of 100K video_ids
@@ -423,21 +436,23 @@ class Runtime():
     In the example, query(ALL_VIDEO_IDS) is not practical to run in one go.
     To get the same results, one can use Runtime in one of two ways.
 
-    The first way is to dispatch all tasks and wait:
+    The first way is to dispatch all tasks and wait::
+
         # Running the query on all videos, in chunks of 5 on 16 processes.
         rt = Runtime(get_forked_process_pool_factory(num_workers=16))
         # Will block until everything finishes
-        # results is a DomainIntervalCollection with all intervals found.
+        # results is a IntervalSetMapping with all intervals found.
         results, failed_video_ids = rt.run(
             query, ALL_VIDEO_IDS, combiner=disjoint_domain_combiner,
             chunksize=5)
 
-    The second way is to use iterator:
+    The second way is to use iterator::
+
         # Get an iterator that yields partial results from each chunk of 5.
         rt = Runtime(get_forked_process_pool_factory(num_workers=16))
         gen = rt.get_result_iterator(query, ALL_VIDEO_IDS, chunksize=5)
         # Blocks until the first batch is done.
-        # results_from_one_batch is a DomainIntervalCollection with intervals
+        # results_from_one_batch is a IntervalSetMapping with intervals
         # found in one task (a chunk of 5 videos).
         results_from_one_batch = next(gen)
     """
@@ -489,10 +504,9 @@ class Runtime():
                 Defaults to True.
 
         Returns:
-            A pair (query_output, args_with_err) where
-            query_output: The combined results from successful tasks.
-            args_with_err: A list that is a subset of args that failed to
-                execute.
+            A pair ``(query_output, args_with_err)`` where ``query_output`` is
+            the combined results from successful tasks, and ``args_with_err``
+            is a list that is a subset of args that failed to execute.
         """
         with perf_count("Executing query in Runtime", enable=profile):
             with _WorkerPoolContext(self._get_worker_pool(query)) as pool:

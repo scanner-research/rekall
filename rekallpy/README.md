@@ -1,32 +1,36 @@
-## Overview of Modules
+## Overview of Module
 
-### `rekall.interval_set_3d`
-This module provides the `Interval3D` and `IntervalSet3D` types and defines the
-set of operations on them.
+### `rekall`
+The base module provides the `Interval`, `IntervalSet`, and
+`IntervalSetMapping` types and provides a set of operations on them.
 
-An Interval3D is a spatiotemporal volume defined by bounds on each of the three
-dimensions along with a payload of arbitrary type. An IntervalSet3D is a set of
-such 3D volumes.
+An `Interval` is a spatiotemporal volume defined by a bounds and a payload of
+arbitrary type. An `IntervalSet` is a set of such Intervals.
 
-One can perform unary operations such as `map`, `filter` on IntervalSet3D as
+One can perform unary operations such as `map`, `filter` on `IntervalSet` as
 well as binary operations between sets such as `join`, `union` and `minus`.
 
-### `rekall.domain_interval_collection`
-This module provides `DomainIntervalCollection` type which is a collection of
-`IntervalSet3D`s organized by some domain key. It exposes the same interface as
-`IntervalSet3D` and executes operations on the underlying `IntervalSet3D`s.
-It performs binary operations between IntervalSet3Ds of the same key.
+`IntervalSetMapping` is a collection of `IntervalSet`s organized by some key.
+It exposes the same interface as `IntervalSet` and executes operations on the
+underlying `IntervalSet`s. It performs binary operations between `IntervalSet`s
+of the same key.
 
-### `rekall.bbox_predicates`
-This module defines a standard library of common predicates on bounding boxes.
-One can use these predicates on the XY-projection of an Interval3D by using the
-`XY` macro in `rekall.interval_set_3d_utils`.
+### `rekall.bounds`
+This submodule provides the `Bounds` abstraction and two default `Bounds`
+implementations, a one-dimensional `Bounds1D` and a three-dimensional
+`Bounds3D`. `Bounds1D` and `Bounds3D` both come with some useful functions on
+their co-ordinate systems.
 
-### `rekall.temporal_predicates`
-This module provides a standard library of common predicates on 1-dimensional
-intervals. One can use these predicates on the projection of an Interval3D onto
-any of the temporal or spatial dimension by using the `T`, `X` or `Y` macro in
-`rekall.interval_set_3d_utils`.
+### `rekall.predicates`
+This submodule provides a number of useful one-dimensional and two-dimensional
+predicate functions. These functions are often used to filter pairs of
+`Intervals` when joining two `IntervalSet`s or `IntervalSetMapping`s.
+
+### `rekall.stdlib`
+This submodule provides a number of useful functions that are not core to
+Rekall but that we have nevertheless found to be useful. `rekall.stdlib.ingest`
+in particular provides a number of useful functions for reading from various
+data sources into an `IntervalSetMapping`.
 
 ### `rekall.runtime`
 This module provides a library for efficiently executing rekall queries. Given

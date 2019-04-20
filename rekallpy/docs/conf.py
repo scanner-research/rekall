@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'rekall'
-copyright = '2019, Xinwei Yao, Dan Fu, Will Crichton'
-author = 'Xinwei Yao, Dan Fu, Will Crichton'
+copyright = '2019, Dan Fu, Xinwei Yao, Will Crichton'
+author = 'Dan Fu, Xinwei Yao, Will Crichton'
 
 
 # -- General configuration ---------------------------------------------------
