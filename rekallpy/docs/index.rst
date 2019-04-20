@@ -6,11 +6,24 @@
 Welcome to rekall's documentation!
 ==================================
 
+Submodules
+-----------
+
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
 
+   source/rekall.bounds
+   source/rekall.predicates
+   source/rekall.stdlib
+   source/rekall.helpers
+   source/rekall.runtime
 
+Rekall package contents
+-----------
+
+.. automodule:: rekall
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 Indices and tables
 ==================

@@ -26,7 +26,8 @@ class Bounds1D(Bounds):
             't2': t2
         }
 
-    def fromTuple(t1t2_tuple):
+    @classmethod
+    def fromTuple(cls, t1t2_tuple):
         """Create a Bounds1D object with a tuple of length two.
 
         Args:
@@ -39,7 +40,7 @@ class Bounds1D(Bounds):
             A Bounds1D object with 't1' and 't2' co-ordinates, specified by
             ``t1t2_tuple``.
         """
-        return Bounds1D(*list(t1t2_tuple))
+        return cls(*list(t1t2_tuple))
 
     def __lt__(self, other):
         """Ordering of a Bounds1D is by 't1' first and then 't2'."""

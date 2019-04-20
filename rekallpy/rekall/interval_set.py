@@ -247,14 +247,12 @@ class IntervalSet:
             consider pairs within window of each other. See notes in class
             documentation for more details.
 
-            Note that ``merge_op`` is expected to produce a list.
-
         Args:
             other (IntervalSet): The interval set to join with.
             predicate: A function that takes two Intervals and returns a
                 bool.
-            merge_op: A function that takes two Intervals and returns a list
-                of new Intervals.
+            merge_op: A function that takes two Intervals and returns a single
+                new Interval.
             window (optional): Restrict interval pairs to those within
                 window of each other along the primary axis.
                 Defaults to None which means using the default optimization
@@ -269,9 +267,8 @@ class IntervalSet:
             out = []
             for intrvlother in intervals_in_other:
                 if predicate(intrvlself, intrvlother):
-                    new_intrvls = merge_op(intrvlself, intrvlother)
-                    if len(new_intrvls) > 0:
-                        out += new_intrvls
+                    new_intrvl = merge_op(intrvlself, intrvlother)
+                    out.append(new_intrvl)
             return out
         return IntervalSet(self._map_with_other_within_primary_axis_window(
             other, map_output, window))
@@ -772,4 +769,5 @@ class IntervalSet:
                 else:
                     output.append(intrvl)
             return output
-        return IntervalSet(self.fold(update_output, []))
+        return IntervalSet(self.fold(update_output, [],
+            sort_key = lambda intrvl: (intrvl[axis[0]], intrvl[axis[1]])))

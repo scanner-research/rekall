@@ -33,7 +33,8 @@ class Bounds3D(Bounds):
             't1': t1, 't2': t2, 'x1': x1, 'x2': x2, 'y1': y1, 'y2': y2
         }
 
-    def fromTuple(tuple_3d):
+    @classmethod
+    def fromTuple(cls, tuple_3d):
         """Initialize a Bounds3D object with a tuple of length two or six.
 
         Args:
@@ -46,7 +47,7 @@ class Bounds3D(Bounds):
             A Bounds3D object with the six co-ordinates specified by the six
             items in ``tuple3d``.
         """
-        return Bounds3D(*list(tuple_3d))
+        return cls(*list(tuple_3d))
 
     def __lt__(self, other):
         """Ordering is by 't1', 't2', 'x1', 'x2', 'y1', 'y2'."""
@@ -228,7 +229,10 @@ class Bounds3D(Bounds):
 
     def expand_to_frame(self):
         """Returns a bound with the same time extent but with full spatial
-        extent."""
+        extent.
+        
+        Assumes that X/Y co-ordinates are in relative spatial co-ordinates.
+        """
         return Bounds3D(self['t1'], self['t2'], 0., 1., 0., 1.)
 
     def length(self):

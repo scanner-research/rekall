@@ -85,7 +85,7 @@ class Bounds:
             overlaps()(bounds1, bounds2)
 
             # This is True, since there is overlap in the X dimension
-            Bounds2D.T(overlaps())(bounds1, bounds2)
+            Bounds2D.X(overlaps())(bounds1, bounds2)
 
             # This is True.
             bounds1 < bounds2

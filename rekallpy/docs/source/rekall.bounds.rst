@@ -6,9 +6,6 @@ Submodules
 
 .. toctree::
 
-   rekall.bounds.abstract_bounds
-   rekall.bounds.bounds1D
-   rekall.bounds.bounds3D
    rekall.bounds.utils
 
 Module contents

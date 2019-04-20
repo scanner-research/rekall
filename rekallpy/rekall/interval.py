@@ -7,7 +7,7 @@ class Interval:
     An Interval is a wrapper around a Bounds and a payload. The payload can be
     referenced with the 'payload' key - i.e. ``interval['payload']``, as can
     the fields of the Bounds. The bounds field itself can also be referenced
-    with tye 'bounds' key.
+    with type 'bounds' key.
 
     Attributes:
         bounds: Bounds object.

@@ -7,4 +7,4 @@ To add a test, add a new Python script and create classes that inherit from
 
 To run the tests:
 
-From the `rekall` directory, run `python3 setup.py test`.
+From the `rekall` directory, run `python3 -m unittest discover test`.

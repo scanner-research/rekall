@@ -72,11 +72,10 @@ class TestIntervalSet(unittest.TestCase):
             ])
         is3 = is1.join(is2,
                 Bounds3D.T(overlaps()),
-                lambda i1,i2: [
-                    Interval(
-                        i1['bounds'].intersect_time_span_space(i2['bounds']),
-                        i1['payload'] + i2['payload']
-                    )])
+                lambda i1,i2: Interval(
+                    i1['bounds'].intersect_time_span_space(i2['bounds']),
+                    i1['payload'] + i2['payload']
+                ))
         target = IntervalSet([
             Interval(Bounds3D(0.5,1,0,1,0,1),5),
             Interval(Bounds3D(0,1,0,1,0,1),9),
@@ -93,9 +92,9 @@ class TestIntervalSet(unittest.TestCase):
             ])
         is3 = is1.join(is2,
                 Bounds3D.T(before(max_dist=1)),
-                lambda i1, i2: [
-                    Interval(i1['bounds'].span(i2['bounds']), i2['payload'])
-                ],
+                lambda i1, i2: Interval(
+                    i1['bounds'].span(i2['bounds']), i2['payload']
+                ),
                 window=1)
         target = IntervalSet([
             Interval(Bounds3D(t, t+2), t+2) for t in range(98)]+[

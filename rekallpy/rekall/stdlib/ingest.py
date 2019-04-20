@@ -30,7 +30,7 @@ def ism_from_iterable_with_schema_bounds1D(iterable, key_accessor,
     ``getter_accessor`` and ``attrgetter_accessor`` are two examples of
     ``key_accessor`` methods.
 
-    By default, this function expects ``iterator`` to have fields ``K``,
+    By default, this function expects ``iterator`` to have fields ``key``,
     ``t1``, and ``t2``. But ``bounds_schema`` can overwrite those fields. For
     example, if the mapping key, t1, and t2 values are stored in fields
     ``video_id``, ``min_frame``, and ``max_frame`` respectively,
@@ -58,7 +58,7 @@ def ism_from_iterable_with_schema_bounds1D(iterable, key_accessor,
         key_accessor: A function that takes an element of ``iterable`` and
             a key and returns the value of the key on that element.
         bounds_schema (optional): A dictionary that overrides default field
-            keys (``'K'`` for the key, ``'t1'`` for co-ordinate t1, and
+            keys (``'key'`` for the key, ``'t1'`` for co-ordinate t1, and
             ``'t2'`` for co-ordinate t2).
         with_payload (optional): A function that takes in an item in iterable
             and returns the payload for the Interval from the item. Defaults to
@@ -100,7 +100,7 @@ def ism_from_iterable_with_schema_bounds3D(iterable, key_accessor,
     ``getter_accessor`` and ``attrgetter_accessor`` are two examples of
     ``key_accessor`` methods.
 
-    By default, this function expects ``iterator`` to have fields ``K``,
+    By default, this function expects ``iterator`` to have fields ``key``,
     ``t1``, and ``t2``. But ``bounds_schema`` can overwrite those fields and
     add new fields (Bounds3D has default values for ``x1``, ``x2``, ``y1``, and
     ``y2`` - ``bounds_schema`` can overwrite these default values). For
@@ -136,7 +136,7 @@ def ism_from_iterable_with_schema_bounds3D(iterable, key_accessor,
         key_accessor: A function that takes an element of ``iterable`` and
             a key and returns the value of the key on that element.
         bounds_schema (optional): A dictionary that overrides default field
-            keys (``'K'`` for the key, ``'t1'`` for co-ordinate t1, ``'t2'``
+            keys (``'key'`` for the key, ``'t1'`` for co-ordinate t1, ``'t2'``
             for co-ordinate t2, ``'x1'`` for co-ordinate x1, ``'x2'`` for
             co-ordinate x2, ``'y1'`` for co-ordinate y1, and ``'y2'`` for
             co-ordinate y2).
@@ -200,6 +200,13 @@ def ism_from_django_qs(qs, bounds_class=Bounds3D, bounds_schema={},
 
     This will set the payload of each Interval to the id field of the record.
 
+    This supports nested field names. For example::
+
+        {
+            "t1": "face.frame.number",
+            "t2": "face.frame.number"
+        }
+
     Args:
         qs: A Django queryset where every record will become an Interval. 
         bounds_class (optional): The bounds that each Interval will have.
@@ -217,6 +224,12 @@ def ism_from_django_qs(qs, bounds_class=Bounds3D, bounds_schema={},
         NotImplementedError: If ``bounds_class`` is not one of ``Bounds3D`` or
             ``Bounds1D``.
     """
+    def django_accessor(row, field):
+        fields = field.split('.')
+        output = row
+        for field in fields:
+            output = attrgetter_accessor(output, field)
+        return output
     final_schema = {
         "key": "video_id",
         "t1": "min_frame",
@@ -228,15 +241,15 @@ def ism_from_django_qs(qs, bounds_class=Bounds3D, bounds_schema={},
         total = qs.count()
     def payload_parser(record):
         if "payload" in final_schema:
-            return attrgetter_accessor(record, final_schema["payload"])
+            return django_accessor(record, final_schema["payload"])
         else:
             return None
     if bounds_class == Bounds3D:
-        return ism_from_iterable_with_schema_bounds3d(qs, attrgetter_accessor,
+        return ism_from_iterable_with_schema_bounds3d(qs, django_accessor,
             bounds_schema=final_schema, with_payload=payload_parser,
             progress=progress, total=total)
     elif bounds_class == Bounds1D:
-        return ism_from_iterable_with_schema_bounds1d(qs, attrgetter_accessor,
+        return ism_from_iterable_with_schema_bounds1d(qs, django_accessor,
             bounds_schema=final_schema, with_payload=payload_parser,
             progress=progress, total=total)
     else:

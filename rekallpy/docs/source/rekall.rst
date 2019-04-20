@@ -1,21 +1,17 @@
 rekall package
 ==============
 
-Subpackages
+:noindex:
+
+Submodules
 -----------
 
 .. toctree::
 
-    rekall.bounds
-    rekall.stdlib
-
-Submodules
-----------
-
-.. toctree::
-
-   rekall.helpers
+   rekall.bounds
    rekall.predicates
+   rekall.stdlib
+   rekall.helpers
    rekall.runtime
 
 Module contents
