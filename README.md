@@ -1,6 +1,6 @@
 # rekall: spatiotemporal query language
 
-[![Build Status](https://travis-ci.org/scanner-research/rekall.svg?branch=master)](https://travis-ci.org/scanner-research/rekall)
+[![Build Status](https://travis-ci.com/scanner-research/rekall.svg?branch=master)](https://travis-ci.com/scanner-research/rekall)
 [![Documentation Status](https://readthedocs.org/projects/rekallpy/badge/?version=latest)](https://rekallpy.readthedocs.io/en/latest/?badge=latest)
 
 Rekall is a spatiotemporal query language. It operates over sets of intervals and allows for combining and filtering on temporal and spatial predicates.
