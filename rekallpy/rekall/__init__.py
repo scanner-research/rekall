@@ -41,7 +41,8 @@ potentially in parallel, and can combine the results of each chunk at the end.
 from rekall.interval import Interval
 from rekall.interval_set import IntervalSet
 from rekall.interval_set_mapping import IntervalSetMapping
+from rekall.bounds import Bounds3D
 
 __all__ = [
-    'Interval', 'IntervalSet', 'IntervalSetMapping'
+    'Interval', 'IntervalSet', 'IntervalSetMapping', "Bounds3D'
 ]
