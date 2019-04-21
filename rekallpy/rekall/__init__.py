@@ -44,5 +44,5 @@ from rekall.interval_set_mapping import IntervalSetMapping
 from rekall.bounds import Bounds3D
 
 __all__ = [
-    'Interval', 'IntervalSet', 'IntervalSetMapping', "Bounds3D'
+    'Interval', 'IntervalSet', 'IntervalSetMapping', 'Bounds3D'
 ]
