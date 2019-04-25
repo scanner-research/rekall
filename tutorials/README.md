@@ -7,4 +7,5 @@ Rekall queries with Vgrid.
 
 ## Basics
 Start with `Basics.md`. This will walk you through downloading a few example
-videos and show you how to visualize metadata on them in `Basics.ipynb`.
+videos and metadata. Then move on to `Basics.ipynb`, where we show you how to
+move the metadata into Rekall and visualize it with Vgrid.

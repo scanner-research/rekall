@@ -3,9 +3,14 @@
 ## Download Sample Videos and metadata
 Download some sample videos and metadata (run from the tutorials folder):
 ```
-wget...
-
-wget...
+wget --no-check-certificate  https://olimar.stanford.edu/hdd/rekall_tutorials/basics/driving1.mp4 \
+    https://olimar.stanford.edu/hdd/rekall_tutorials/basics/driving2.mp4 \
+    https://olimar.stanford.edu/hdd/rekall_tutorials/basics/driving3.mp4 \
+    https://olimar.stanford.edu/hdd/rekall_tutorials/basics/driving4.mp4 \
+    https://olimar.stanford.edu/hdd/rekall_tutorials/basics/driving1.json \
+    https://olimar.stanford.edu/hdd/rekall_tutorials/basics/driving2.json \
+    https://olimar.stanford.edu/hdd/rekall_tutorials/basics/driving3.json \
+    https://olimar.stanford.edu/hdd/rekall_tutorials/basics/driving4.json
 ```
 
 ## Start a file server for the videos
