@@ -15,6 +15,7 @@ metadata visualization widget.
 ## Getting Started
 * Quickly [set up](#setup) your environment
 * Try out the [tutorials](tutorials/)
+* Check out the [documentation](https://rekallpy.readthedocs.io/en/latest/?badge=latest)
 * View the [developer guide](#developer-guidelines)
 
 ## Sample Usage
