@@ -33,15 +33,27 @@ cd rekall
 
 [3] Create virtual environment:
 ```
-conda XX
-source XX
+conda env create -f environment.yml
+conda activate rekall
 ```
 This creates a virtual environment and installs `rekall`, `vgrid`, and
 `vgrid_jupyter` (our video visualization libraries). In particular, we install
-`python3`, `pip`, and `npm` in the environment, and `ffmpeg` and the Node.js
-`http-server` for `vgrid`'s video visualization. 
+`python3`, `pip`, and `npm` in the environment, and `ffmpeg` for `vgrid`'s
+video visualization. 
 
-[4] Run unit tests:
+[4] Install Node packages:
+TODO: figure out how to put this into the conda environment
+
+Run these commands to install the javascript for our tutorials and
+visualizations (optional if you're not using Vgrid to visualize video
+metadata):
+```
+npm install --save @wcrichto/rekall
+npm install --save @wcrichto/vgrid
+jupyter nbextension enable --py --sys-prefix vgrid_jupyter
+```
+
+[5] Run unit tests:
 ```
 cd rekallpy
 python -m unittest discover test
@@ -76,12 +88,14 @@ If you are interested in contributing to Rekall (and we welcome contribution
 via pull requests!), follow the [setup](#setup) guidelines above, and then
 install `rekallpy` and `rekalljs` from source:
 
-UNININSTALL AND LINK NEW PACKAGES
+UNININSTALL AND LINK NEW PACKAGES - instructions TODO (try installation from
+source below)
 
 If you are making changes to `rekalljs`, you will also need to install `vgrid`
 and `vgrid_jupyter` from source:
 
-UNINSTALL AND LINK NEW PACKAGES
+UNININSTALL AND LINK NEW PACKAGES - instructions TODO (see instructions for
+installing from source from `vgrid` and `vgrid_jupyter` repos)
 
 ### Python API
 

@@ -22,13 +22,13 @@ wget --no-check-certificate  https://olimar.stanford.edu/hdd/rekall_tutorials/ba
 ## Start a file server for the videos
 In a new terminal (from this folder):
 ```
-source activate ...
+conda activate rekall
 http-server
 ```
 
 ## Start a jupyter notebook
 ```
-source activate ...
+conda activate rekall
 jupyter notebook --ip 0.0.0.0 --port 8000
 ```
 This should open up a new window with the Jupyter environment (if you're
