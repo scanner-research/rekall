@@ -1,5 +1,6 @@
 *.swp
 *.pycache
+*.ipynb_checkpoints
 
 # Ignore files downloaded from tutorials
 tutorials/driving*.mp4

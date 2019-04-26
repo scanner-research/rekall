@@ -1,4 +1,10 @@
 # Basics Tutorial
+The purpose of this tutorial is to introduce the basics of the Rekall API and
+show how Rekall queries, together with the Vgrid visualization interface, can
+be used for video analysis.
+
+This is part one of the tutorial, where we download some videos and metadata
+for visualization.
 
 ## Download Sample Videos and metadata
 Download some sample videos and metadata (run from the tutorials folder):
@@ -17,7 +23,7 @@ wget --no-check-certificate  https://olimar.stanford.edu/hdd/rekall_tutorials/ba
 In a new terminal (from this folder):
 ```
 source activate ...
-python -m http.server
+http-server
 ```
 
 ## Start a jupyter notebook
@@ -29,6 +35,6 @@ This should open up a new window with the Jupyter environment (if you're
 running locally) or give you a link to the Jupyter environment (if you're
 running remotely).
 
-## Open the `basics.ipynb` notebook
-The rest of the tutorial continues in the `basics.ipynb` notebook. Open that
+## Open the `Basics.ipynb` notebook
+The rest of the tutorial continues in the `Basics.ipynb` notebook. Open that
 notebook in your Jupyter environment to continue.

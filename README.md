@@ -33,13 +33,13 @@ cd rekall
 
 [3] Create virtual environment:
 ```
-conda stuff
-source stuff
+conda XX
+source XX
 ```
 This creates a virtual environment and installs `rekall`, `vgrid`, and
 `vgrid_jupyter` (our video visualization libraries). In particular, we install
-`python3`, `pip`, and `npm` in the environment, and `ffmpeg` for `vgrid`'s
-video visualization. 
+`python3`, `pip`, and `npm` in the environment, and `ffmpeg` and the Node.js
+`http-server` for `vgrid`'s video visualization. 
 
 [4] Run unit tests:
 ```
@@ -57,6 +57,19 @@ Or, to use Rekall in another project/environment (Python3 required):
 pip install rekallpy
 npm install --save @wcrichto/rekall
 ```
+
+If you'd like to use Rekall and Vgrid without using an Anaconda environment,
+here's the full list of dependencies for our tutorials (in order of install):
+* Python3, and Pip
+* NPM
+* ffmpeg
+* Jupyter
+* [Node.js httpserver](https://www.npmjs.com/package/http-server)
+* Rekall (both Python and Javascript APIs) - install with above command or
+[from source](#developer-guidelines)
+* [Vgrid](https://github.com/scanner-research/vgrid) - both the Python and
+Javascript APIs
+* [Vgrid Jupyter](https://github.com/scanner-research/vgrid_jupyter)
 
 ## Developer Guidelines
 If you are interested in contributing to Rekall (and we welcome contribution
