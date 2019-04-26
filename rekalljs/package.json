@@ -1,6 +1,6 @@
 {
   "name": "@wcrichto/rekall",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "",
   "main": "dist/bundle.js",
   "types": "dist/rekall.d.ts",
