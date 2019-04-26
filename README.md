@@ -50,6 +50,7 @@ metadata):
 ```
 npm install http-server -g
 npm install --save @wcrichto/rekall
+npm install --save react react-dom mobx mobx-react
 npm install --save @wcrichto/vgrid
 jupyter nbextension enable --py --sys-prefix vgrid_jupyter
 ```
@@ -83,6 +84,22 @@ here's the full list of dependencies for our tutorials (in order of install):
 * [Vgrid](https://github.com/scanner-research/vgrid) - both the Python and
 Javascript APIs
 * [Vgrid Jupyter](https://github.com/scanner-research/vgrid_jupyter)
+
+Backup instructions:
+```
+conda create --name rekall anaconda
+conda activate rekall
+conda install -c conda-forge nodejs 
+conda install -c menpo ffmpeg
+pip install rekallpy
+npm install --save @wcrichto/rekall
+pip install vgridpy
+npm install --save react react-dom mobx mobx-react
+npm install --save @wcrichto/vgrid
+pip install vgrid_jupyter
+jupyter nbextension enable --py --sys-prefix vgrid_jupyter
+npm install http-server -g
+```
 
 ## Developer Guidelines
 If you are interested in contributing to Rekall (and we welcome contribution
