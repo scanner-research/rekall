@@ -250,7 +250,7 @@ class IntervalSetMapping(MutableMapping):
             The original IntervalSetMapping is unchanged. This is the
             same behavior as all unary methods of IntervalSet.
         """
-        return DomainIntervalCollection({
+        return IntervalSetMapping({
             k: intervalset.map_payload(lambda p:(p,k))
             for k, intervalset in self.get_grouped_intervals().items()})
 
