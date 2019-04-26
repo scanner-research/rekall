@@ -48,6 +48,7 @@ Run these commands to install the javascript for our tutorials and
 visualizations (optional if you're not using Vgrid to visualize video
 metadata):
 ```
+npm install http-server -g
 npm install --save @wcrichto/rekall
 npm install --save @wcrichto/vgrid
 jupyter nbextension enable --py --sys-prefix vgrid_jupyter
