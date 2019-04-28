@@ -1,3 +1,5 @@
+import {observable, IObservableArray, toJS} from 'mobx';
+
 export abstract class Domain {}
 
 export class Domain_Video extends Domain {
@@ -60,12 +62,10 @@ export class Interval<T> {
 }
 
 export class IntervalSet<T> {
-  private intervals: Interval<T>[];
-  dirty: boolean
+  private intervals: IObservableArray<Interval<T>>;
 
   constructor(intervals: Interval<T>[]) {
-    this.intervals = intervals;
-    this.dirty = false;
+    this.intervals = observable.array(intervals);
   }
 
   time_overlaps(bounds: Bounds): IntervalSet<T> {
@@ -80,7 +80,24 @@ export class IntervalSet<T> {
     return this.intervals;
   }
 
+  length(): number {
+    return this.intervals.length;
+  }
+
+  arbitrary_interval(): Interval<T> | null {
+    return this.length() > 0 ? this.intervals[0] : null;
+  }
+
+  add(interval: Interval<T>) {
+    // TODO: should be time-sorted
+    this.intervals.push(interval);
+  }
+
   static from_json<S>(obj: any, payload_from_json: (o: any) => S): IntervalSet<S> {
     return new IntervalSet(obj.map((intvl: any) => Interval.from_json(intvl, payload_from_json)));
+  }
+
+  to_json(): any {
+    return toJS(this.intervals);
   }
 }

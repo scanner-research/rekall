@@ -20,6 +20,10 @@
     "url": "https://github.com/scanner-research/rekall/issues"
   },
   "homepage": "https://github.com/scanner-research/rekall#readme",
+  "peerDependencies": {
+    "mobx": "^4.8.0",
+    "mobx-react": "^5.4.3"
+  },
   "devDependencies": {
     "@types/mocha": "^5.2.6",
     "awesome-typescript-loader": "^5.2.1",
@@ -28,6 +32,8 @@
     "jsdom": "^14.0.0",
     "jsdom-global": "^3.0.2",
     "mocha": "^6.0.2",
+    "mobx": "^4.8.0",
+    "mobx-react": "^5.4.3",
     "source-map-loader": "^0.2.4",
     "ts-node": "^8.0.3",
     "typescript": "^3.4.1",
