@@ -12,10 +12,10 @@ export class Domain_Video extends Domain {
 }
 
 export class BoundingBox {
-  x1: number;
-  x2: number;
-  y1: number;
-  y2: number;
+  @observable x1: number;
+  @observable x2: number;
+  @observable y1: number;
+  @observable y2: number;
 
   constructor(x1?: number, x2?: number, y1?: number, y2?: number) {
     this.x1 = x1 ? x1 : 0;
@@ -26,10 +26,10 @@ export class BoundingBox {
 }
 
 export class Bounds {
-  domain?: Domain;
-  t1: number;
-  t2: number;
-  bbox: BoundingBox;
+  @observable domain?: Domain;
+  @observable t1: number;
+  @observable t2: number;
+  @observable bbox: BoundingBox;
 
   constructor(t1: number, t2?: number, bbox?: BoundingBox, domain?: Domain) {
     this.t1 = t1;
@@ -48,8 +48,8 @@ export class Bounds {
 }
 
 export class Interval<T> {
-  bounds: Bounds;
-  data: T;
+  @observable bounds: Bounds;
+  @observable data: T;
 
   constructor(bounds: Bounds, data: T) {
     this.bounds = bounds;
@@ -91,6 +91,10 @@ export class IntervalSet<T> {
   add(interval: Interval<T>) {
     // TODO: should be time-sorted
     this.intervals.push(interval);
+  }
+
+  remove(interval: Interval<T>) {
+    this.intervals.splice(this.intervals.indexOf(interval), 1);
   }
 
   static from_json<S>(obj: any, payload_from_json: (o: any) => S): IntervalSet<S> {
