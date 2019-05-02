@@ -250,14 +250,3 @@ class Bounds3D(Bounds):
     def Y_axis():
         """Returns a tuple representing the Y axis."""
         return ('y1', 'y2')
-
-    def to_json(self):
-        """Converts the bounds to a JSON object."""
-        return {
-            't1': self['t1'],
-            't2': self['t1'],
-            'x1': self['x1'],
-            'x2': self['x2'],
-            'y1': self['y1'],
-            'y2': self['y2']
-        }

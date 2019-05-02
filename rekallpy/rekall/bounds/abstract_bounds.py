@@ -183,6 +183,10 @@ class Bounds:
             axis = self.primary_axis()
         return self[axis[1]] - self[axis[0]]
 
+    def to_json(self):
+        """Converts the bounds to a JSON object."""
+        return self.data
+
     def __lt__(self, other):
         """Method to compare two Bounds. Child classes should implement
         this."""
