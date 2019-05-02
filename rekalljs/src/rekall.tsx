@@ -12,10 +12,10 @@ export class Domain_Video extends Domain {
 }
 
 export class BoundingBox {
-  @observable x1: number;
-  @observable x2: number;
-  @observable y1: number;
-  @observable y2: number;
+  x1: number;
+  x2: number;
+  y1: number;
+  y2: number;
 
   constructor(x1?: number, x2?: number, y1?: number, y2?: number) {
     this.x1 = x1 ? x1 : 0;
@@ -26,10 +26,10 @@ export class BoundingBox {
 }
 
 export class Bounds {
-  @observable domain?: Domain;
-  @observable t1: number;
-  @observable t2: number;
-  @observable bbox: BoundingBox;
+  domain?: Domain;
+  t1: number;
+  t2: number;
+  bbox: BoundingBox;
 
   constructor(t1: number, t2?: number, bbox?: BoundingBox, domain?: Domain) {
     this.t1 = t1;
@@ -48,8 +48,8 @@ export class Bounds {
 }
 
 export class Interval<T> {
-  @observable bounds: Bounds;
-  @observable data: T;
+  bounds: Bounds;
+  data: T;
 
   constructor(bounds: Bounds, data: T) {
     this.bounds = bounds;
