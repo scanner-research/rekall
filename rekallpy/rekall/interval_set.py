@@ -10,6 +10,7 @@ from functools import reduce
 import constraint as constraint
 import copy
 
+
 class IntervalSet:
     """A set of Intervals.
 
@@ -27,7 +28,7 @@ class IntervalSet:
         Interval passed in during construction). This neighborhood defaults
         to DEFAULT_FRACTION of the overall range along that axis of the
         IntervalSet.
-        
+
         Specifically, we compute ``DEFAULT_FRACTION`` of the
         overall range of that axis and set ``optimization_window`` to that
         fraction of the range. The optimized operations (``join``,
@@ -36,11 +37,11 @@ class IntervalSet:
         ``optimization_window``.
     """
     NUM_INTRVLS_THRESHOLD = 1000
-    DEFAULT_FRACTION = 1/100
+    DEFAULT_FRACTION = 1 / 100
 
     def __init__(self, intrvls):
         """Initializes IntervalSet with a list of Intervals.
-    
+
         Args:
             intrvls: a list of Intervals to put in the set.
         """
@@ -124,7 +125,7 @@ class IntervalSet:
 
     def fold(self, reducer, init=None, sort_key=None):
         """Folds a reducer over an ordered list of intervals in the set.
-        
+
         Args:
             reducer: A function that takes a previous state and an interval
                 and returns an updated state.
@@ -149,8 +150,11 @@ class IntervalSet:
             init = copy.deepcopy(init)
             return reduce(reducer, lst, init)
 
-    def fold_to_set(self, reducer, init=None, sort_key = None,
-            acc_to_set = lambda acc:IntervalSet(acc)):
+    def fold_to_set(self,
+                    reducer,
+                    init=None,
+                    sort_key=None,
+                    acc_to_set=lambda acc: IntervalSet(acc)):
         """Fold over intervals in the set to produce a new IntervalSet.
 
         The same as `fold` method except it returns a IntervalSet by running
@@ -177,15 +181,17 @@ class IntervalSet:
         """
         return acc_to_set(self.fold(reducer, init, sort_key))
 
-    def _map_with_other_within_primary_axis_window(self, other,
-            mapper, window=None):
+    def _map_with_other_within_primary_axis_window(self,
+                                                   other,
+                                                   mapper,
+                                                   window=None):
         """Internal helper to deal with cross products limited to some window
         around a primary axis.
 
         Map over a list where elements are:
             (interval_in_self, [intervals_in_other])
         where intervals_in_other are those in other that are within window
-        of interval_in_self along each's primary axis. 
+        of interval_in_self along each's primary axis.
 
         Args:
             other (IntervalSet): The other IntervalSet to do cross product with.
@@ -206,7 +212,7 @@ class IntervalSet:
 
         self_pa = self._primary_axis
         other_pa = other._primary_axis
-    
+
         # State is (other_start_index, outputs, done_flag)
         def update_state(state, intrvlself):
             start_index, outputs, done = state
@@ -231,15 +237,16 @@ class IntervalSet:
                     start_index = new_start_index
             outputs.append(mapper(intrvlself, intervals_in_other))
             return start_index, outputs, done
+
         state = (0, [], False)
-        _,outputs,_ =  self.fold(update_state, state)
+        _, outputs, _ = self.fold(update_state, state)
         return [r for results in outputs for r in results]
 
     def join(self, other, predicate, merge_op, window=None):
         """Cross-products two sets and combines pairs that pass the predicate.
 
         Named after the database JOIN operation, this method takes the cross-
-        product of two IntervalSets, filters the resulting set of pairs and 
+        product of two IntervalSets, filters the resulting set of pairs and
         forms a new IntervalSet by combining each pair into a new Interval.
 
         Note:
@@ -263,6 +270,7 @@ class IntervalSet:
             A new IntervalSet from the intervals produced by merge_op on
             pairs that pass the predicate.
         """
+
         def map_output(intrvlself, intervals_in_other):
             out = []
             for intrvlother in intervals_in_other:
@@ -270,8 +278,10 @@ class IntervalSet:
                     new_intrvl = merge_op(intrvlself, intrvlother)
                     out.append(new_intrvl)
             return out
-        return IntervalSet(self._map_with_other_within_primary_axis_window(
-            other, map_output, window))
+
+        return IntervalSet(
+            self._map_with_other_within_primary_axis_window(
+                other, map_output, window))
 
     def filter(self, predicate):
         """Filter the set and keep intervals that pass the predicate.
@@ -283,8 +293,9 @@ class IntervalSet:
             A new IntervalSet which is the filtered set.
         """
         return IntervalSet([
-            intrvl.copy() for intrvl in self.get_intervals() if 
-            predicate(intrvl)])
+            intrvl.copy() for intrvl in self.get_intervals()
+            if predicate(intrvl)
+        ])
 
     def group_by(self, key, merge):
         """Group intervals by key and produces a new interval for each group.
@@ -298,16 +309,20 @@ class IntervalSet:
         Returns:
             A new IntervalSet with the results of merge on each group.
         """
+
         def add_to_group(group, i):
-            k = key(i) 
+            k = key(i)
             if k not in group:
                 group[k] = [i]
             else:
                 group[k].append(i)
             return group
+
         groups = self.fold(add_to_group, {})
-        output = [merge(k, IntervalSet(intervals))
-                for k, intervals in groups.items()]
+        output = [
+            merge(k, IntervalSet(intervals))
+            for k, intervals in groups.items()
+        ]
         return IntervalSet(output)
 
     def minus(self, other, axis=None, window=None):
@@ -330,7 +345,7 @@ class IntervalSet:
 
             # and that the following two intervals are in other
                       |--------------|     |----------------|
-    
+
             # this function will produce three intervals
             |---------|              |-----|                |--------|
 
@@ -357,10 +372,11 @@ class IntervalSet:
         """
         if axis is None:
             axis = self._primary_axis
+
         def compute_difference(intrvl, overlapped_intervals):
             """Returns a list of intervals that are what is left of intrvl
             after subtracting all overlapped_intervals.
-            
+
             Expects overlapped_intervals to be sorted by (axis[0], axis[1]).
             """
             start = intrvl[axis[0]]
@@ -373,7 +389,7 @@ class IntervalSet:
                 intervals_across_start = []
                 first_interval_after_start = None
                 new_overlapped_index = None
-                for idx,overlap in enumerate(
+                for idx, overlap in enumerate(
                         overlapped_intervals[overlapped_index:]):
                     v1 = overlap[axis[0]]
                     v2 = overlap[axis[1]]
@@ -405,22 +421,25 @@ class IntervalSet:
                 if new_overlapped_index is not None:
                     overlapped_index = new_overlapped_index
             return output
-        
+
         def map_output(intrvl, overlapped):
             # Take only nontrivial overlaps
-            to_subtract = sorted(
-                [i for i in overlapped if (i.size(axis) > 0 and
-                    Bounds.cast({'t1': axis[0], 't2': axis[1]})(overlaps())
-                    (intrvl, i)
-                )],
-                key = lambda i: (i[axis[0]], i[axis[1]]))
+            to_subtract = sorted([
+                i for i in overlapped
+                if (i.size(axis) > 0 and Bounds.cast({
+                    't1': axis[0],
+                    't2': axis[1]
+                })(overlaps())(intrvl, i))
+            ],
+                                 key=lambda i: (i[axis[0]], i[axis[1]]))
             if len(to_subtract) == 0:
                 return [intrvl.copy()]
             else:
                 return compute_difference(intrvl, to_subtract)
 
-        return IntervalSet(self._map_with_other_within_primary_axis_window(
-            other, map_output, window))
+        return IntervalSet(
+            self._map_with_other_within_primary_axis_window(
+                other, map_output, window))
 
     def match(self, pattern, exact=False):
         """Pattern matching among the intervals in the set.
@@ -465,6 +484,7 @@ class IntervalSet:
         Returns:
             A list of solutions as described above.
         """
+
         def parse_pattern(pattern):
             """
             Parser for pattern matching
@@ -507,13 +527,16 @@ class IntervalSet:
             def pred(*args):
                 new_args = [intervals[i] for i in args]
                 return satisfies_all(preds, new_args)
+
             return pred
 
         prob = constraint.Problem()
         for name, predicates in nodes.items():
             # Pre-compute single variable constraints
-            candidates = [i for i, intrvl in enumerate(intervals)
-                    if satisfies_all(predicates, [intrvl])]
+            candidates = [
+                i for i, intrvl in enumerate(intervals)
+                if satisfies_all(predicates, [intrvl])
+            ]
             if len(candidates) == 0:
                 return []
             prob.addVariable(name, candidates)
@@ -553,18 +576,21 @@ class IntervalSet:
                 Defaults to None which means using the default optimization
                 window associated with self. See class Documentation for more
                 detail.
-        
+
         Returns:
             A new IntervalSet with intervals in self that satisify predicate
             with at least one interval in other.
         """
+
         def map_output(intrvlself, intrvlothers):
             for intrvlother in intrvlothers:
                 if predicate(intrvlself, intrvlother):
                     return [intrvlself.copy()]
             return []
-        return IntervalSet(self._map_with_other_within_primary_axis_window(
-            other, map_output, window))
+
+        return IntervalSet(
+            self._map_with_other_within_primary_axis_window(
+                other, map_output, window))
 
     def map_payload(self, fn):
         """Maps a function over payloads of all intervals in the set.
@@ -577,8 +603,10 @@ class IntervalSet:
             A new IntervalSet of intervals with the same bounds but with
             transformed payloads.
         """
+
         def map_fn(intrvl):
             return Interval(intrvl['bounds'], fn(intrvl['payload']))
+
         return self.map(map_fn)
 
     def dilate(self, window, axis=None):
@@ -597,14 +625,15 @@ class IntervalSet:
         """
         if axis is None:
             axis = self._primary_axis
+
         def dilate_bounds(b, window, axis):
             new_bounds = b.copy()
             new_bounds[axis[0]] -= window
             new_bounds[axis[1]] += window
             return new_bounds
+
         return self.map(lambda intrvl: Interval(
-            dilate_bounds(intrvl['bounds'], window, axis),
-            intrvl['payload']))
+            dilate_bounds(intrvl['bounds'], window, axis), intrvl['payload']))
 
     def filter_size(self, min_size=0, max_size=INFTY, axis=None):
         """Filter the intervals by length of the bounds along some axis.
@@ -624,8 +653,8 @@ class IntervalSet:
         """
         if axis is None:
             axis = self._primary_axis
-        return self.filter(lambda intrvl: intrvl.size(axis) >= min_size and(
-            max_size==INFTY or intrvl.size(axis)<=max_size))
+        return self.filter(lambda intrvl: intrvl.size(axis) >= min_size and (
+            max_size == INFTY or intrvl.size(axis) <= max_size))
 
     def group_by_axis(self, axis, output_bounds):
         """Group intervals by a particular axis.
@@ -674,17 +703,23 @@ class IntervalSet:
             A new IntervalSet of Intervals grouped by ``axis``, with the full
             IntervalSet of Intervals in the group in the payload.
         """
+
         def key_fn(intrvl):
             return (intrvl[axis[0]], intrvl[axis[1]])
+
         def merge_fn(key, intervals):
             new_bounds = output_bounds.copy()
             new_bounds[axis[0]] = key[0]
             new_bounds[axis[1]] = key[1]
             return Interval(new_bounds, intervals)
+
         return self.group_by(key_fn, merge_fn)
 
-    def collect_by_interval(self, other, predicate,
-            filter_empty=True, window=None):
+    def collect_by_interval(self,
+                            other,
+                            predicate,
+                            filter_empty=True,
+                            window=None):
         """Collect intervals in other and nest them under intervals in self.
 
         For each interval in self, its payload in the output IntervalSet will
@@ -712,24 +747,31 @@ class IntervalSet:
                 Defaults to None which means using the default optimization
                 window associated with self. See class Documentation for more
                 detail.
-        
+
         Returns:
             A new IntervalSet of intervals in self but with nested
             interval set from other in the payload.
         """
-        def map_output(intrvlself, intrvlothers):
-            intrvls_to_nest = IntervalSet([
-                i for i in intrvlothers if predicate(intrvlself, i)])
-            if not intrvls_to_nest.empty() or not filter_empty:
-                return [Interval(
-                    intrvlself['bounds'].copy(),
-                    (intrvlself['payload'], intrvls_to_nest))]
-            return []
-        return IntervalSet(self._map_with_other_within_primary_axis_window(
-            other, map_output, window))
 
-    def coalesce(self, axis, bounds_merge_op,
-            payload_merge_op=lambda p1, p2: p1, epsilon=0):
+        def map_output(intrvlself, intrvlothers):
+            intrvls_to_nest = IntervalSet(
+                [i for i in intrvlothers if predicate(intrvlself, i)])
+            if not intrvls_to_nest.empty() or not filter_empty:
+                return [
+                    Interval(intrvlself['bounds'].copy(),
+                             (intrvlself['payload'], intrvls_to_nest))
+                ]
+            return []
+
+        return IntervalSet(
+            self._map_with_other_within_primary_axis_window(
+                other, map_output, window))
+
+    def coalesce(self,
+                 axis,
+                 bounds_merge_op,
+                 payload_merge_op=lambda p1, p2: p1,
+                 epsilon=0):
         """Recursively merge all intervals that are touching or overlapping
         along ``axis``.
 
@@ -755,19 +797,36 @@ class IntervalSet:
             A new IntervalSet of intervals that are disjoint along ``axis`` and
             are at least ``epsilon`` apart.
         """
+
         def update_output(output, intrvl):
             if len(output) == 0:
                 output.append(intrvl)
             else:
                 merge_candidate = output[-1]
-                if Bounds.cast({ axis[0]: 't1', axis[1]: 't2' })(or_pred(
-                    overlaps(),
-                    before(max_dist=epsilon)))(merge_candidate, intrvl):
-                    output[-1] = Interval(bounds_merge_op(
-                        merge_candidate['bounds'], intrvl['bounds'])        
-                    )
+                if Bounds.cast({
+                        axis[0]: 't1',
+                        axis[1]: 't2'
+                })(or_pred(overlaps(),
+                           before(max_dist=epsilon)))(merge_candidate, intrvl):
+                    output[-1] = Interval(
+                        bounds_merge_op(merge_candidate['bounds'],
+                                        intrvl['bounds']))
                 else:
                     output.append(intrvl)
             return output
-        return IntervalSet(self.fold(update_output, [],
-            sort_key = lambda intrvl: (intrvl[axis[0]], intrvl[axis[1]])))
+
+        return IntervalSet(
+            self.fold(
+                update_output, [],
+                sort_key=lambda intrvl: (intrvl[axis[0]], intrvl[axis[1]])))
+
+    def to_json(self, payload_to_json):
+        """Converts the interval set to a JSON object.
+
+        Args:
+            payload_to_json: Function that converts each payload to a JSON object.
+
+        Returns:
+            JSON object for the interval set
+        """
+        return [intvl.to_json(payload_to_json) for intvl in self._intrvls]

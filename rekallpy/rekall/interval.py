@@ -1,6 +1,7 @@
 """An Interval is a wrapper around a Bounds instance with a payload.
 """
 
+
 class Interval:
     """A single Interval.
 
@@ -13,9 +14,10 @@ class Interval:
         bounds: Bounds object.
         payload: payload object.
     """
+
     def __init__(self, bounds, payload=None):
         """Initializes an interval with certain bounds and payload.
-        
+
         Args:
             bounds: Bounds for this Interval.
             payload (optional): Metadata of arbitrary type. Defaults to None.
@@ -59,8 +61,10 @@ class Interval:
         """Returns a copy of the Interval."""
         return Interval(self.bounds.copy(), self.payload)
 
-    def combine(self, other, bounds_combiner,
-            payload_combiner=lambda p1, p2: p1):
+    def combine(self,
+                other,
+                bounds_combiner,
+                payload_combiner=lambda p1, p2: p1):
         """Combines two Intervals into one by separately combining the bounds
         and the payload.
 
@@ -76,7 +80,7 @@ class Interval:
             ``payload_combiner``.
         """
         return Interval(bounds_combiner(self.bounds, other.bounds),
-            payload_combiner(self.payload, other.payload))
+                        payload_combiner(self.payload, other.payload))
 
     def P(pred):
         """This wraps a predicate so it is applied to the payload of Intervals
@@ -92,19 +96,35 @@ class Interval:
         Returns:
             An output function that applies ``pred`` to payloads.
         """
+
         def new_pred(*interval_args):
             return pred(*[i.payload for i in interval_args])
+
         return new_pred
 
     def size(self, axis=None):
         """Get the size of the bounds along some axis.
-        
+
         Args:
             axis (optional): The axis to compute size on. Represented as a pair
                 of co-ordinates, such as ``('t1', 't2')``. Defaults to ``None``,
                 which uses the primary axis of ``self``'s Bounds.
-        
+
         Returns:
             The size of the bounds across some axis.
         """
         return self.bounds.size(axis)
+
+    def to_json(self, payload_to_json):
+        """Converts the interval to a JSON object.
+
+        Args:
+            payload_to_json: Function that converts the payload to a JSON object.
+
+        Returns:
+            JSON object for the interval
+        """
+        return {
+            'bounds': self.bounds.to_json(),
+            'payload': payload_to_json(self.payload)
+        }

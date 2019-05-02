@@ -43,7 +43,7 @@ export class Bounds {
   }
 
   static from_json(obj: any): Bounds {
-    return new Bounds(obj.t[0], obj.t[1], new BoundingBox(obj.x[0], obj.x[1], obj.y[0], obj.y[1]), obj.domain);
+    return new Bounds(obj.t1, obj.t2, new BoundingBox(obj.x1, obj.x2, obj.y1, obj.y2), obj.domain);
   }
 }
 
@@ -57,7 +57,7 @@ export class Interval<T> {
   }
 
   static from_json<S>(obj: any, payload_from_json: (o: any) => S): Interval<S> {
-    return new Interval(Bounds.from_json(obj), payload_from_json(obj.payload));
+    return new Interval(Bounds.from_json(obj.bounds), payload_from_json(obj.payload));
   }
 }
 
