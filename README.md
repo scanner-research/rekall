@@ -18,7 +18,7 @@ which we use for the [vgrid](https://github.com/scanner-research/vgrid) video
 metadata visualization widget.
 
 ## Getting Started
-* Quickly [set up](#setup) your environment
+* Quickly [install](#installation) Rekall
 * Try out the [tutorials](tutorials/)
 * Check out the [documentation](https://rekallpy.readthedocs.io/en/latest/?badge=latest)
 * View the [developer guide](#developer-guidelines)
@@ -57,7 +57,7 @@ bbox_ism = IntervalSetMapping({
 Check out the [tutorials](tutorials/) for more on how Rekall can be used to
 operate on this spatiotemporal data.
 
-## Setup
+## Installation
 
 ### Python API
 Rekall requires Python 3.5 or greater.
@@ -72,6 +72,8 @@ You must have [npm](https://www.npmjs.com/get-npm) installed.
 ```
 npm install --save @wcrichto/vgrid
 ```
+
+Now that you've installed Rekall, check out the [tutorials](tutorials/)!
 
 ## Developer Guidelines
 If you are interested in contributing to Rekall (and we welcome contribution
