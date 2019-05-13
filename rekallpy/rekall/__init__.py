@@ -12,9 +12,9 @@ arbitrary type. An ``IntervalSet`` is a set of such Intervals.
 One can perform unary operations such as ``map``, ``filter`` on ``IntervalSet`` as
 well as binary operations between sets such as ``join``, ``union`` and ``minus``.
 
-``IntervalSetMapping`` is a collection of ``IntervalSet``s organized by some key.
+``IntervalSetMapping`` is a collection of ``IntervalSets`` organized by some key.
 It exposes the same interface as ``IntervalSet`` and executes operations on the
-underlying ``IntervalSet``s. It performs binary operations between ``IntervalSet``s
+underlying ``IntervalSets``. It performs binary operations between ``IntervalSets``
 of the same key.
 
 The ``rekall.bounds`` submodule provides the ``Bounds`` abstraction and two default
@@ -24,8 +24,8 @@ their co-ordinate systems.
 
 The ``rekall.predicates`` submodule provides a number of useful one-dimensional
 and two-dimensional predicate functions. These functions are often used to
-filter pairs of ``Intervals`` when joining two ``IntervalSet``s or
-``IntervalSetMapping``s.
+filter pairs of ``Intervals`` when joining two ``IntervalSets`` or
+``IntervalSetMappings``.
 
 The ``rekall.stdlib`` submodule provides a number of useful functions that are
 not core to Rekall but that we have nevertheless found to be useful.
