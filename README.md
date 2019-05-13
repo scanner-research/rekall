@@ -9,7 +9,7 @@ In combination with the [VGrid](https://github.com/scanner-research/vgrid)
 visualization widget, Rekall can be used to filter and visualize spatiotemporal
 data:
 
-![vgrid_preview](https://olimar.stanford.edu/hdd/rekall_tutorials/basics/vgrid_preview.png)
+![rekall_preview](http://olimar.stanford.edu/hdd/rekall_tutorials/basics/vgrid_preview.png)
 
 Rekall has a main [Python API](https://github.com/scanner-research/rekall/tree/master/rekallpy)
 for all the core interval processing operations. Rekall also has a
@@ -28,7 +28,7 @@ Rekall provides utilities for processing spatiotemporal intervals (like bounding
 boxes in a video).
 This code sample shows how bounding boxes for a few videos can be loaded into
 Rekall:
-```
+```python
 from rekall import Interval, IntervalSet, IntervalSetMapping, Bounds3D
 import urllib3, requests, os
 
