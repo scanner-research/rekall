@@ -9,7 +9,7 @@ In combination with the [VGrid](https://github.com/scanner-research/vgrid)
 visualization widget, Rekall can be used to filter and visualize spatiotemporal
 data:
 
-![rekall_preview](http://olimar.stanford.edu/hdd/rekall_tutorials/basics/vgrid_preview.png)
+![rekall_preview](rekall_preview.png)
 
 Rekall has a main [Python API](https://github.com/scanner-research/rekall/tree/master/rekallpy)
 for all the core interval processing operations. Rekall also has a
