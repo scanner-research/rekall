@@ -7,10 +7,13 @@ Rekall queries with Vgrid.
 
 To run these tutorials, you'll need to install `vgrid` and `vgrid_jupyter` for
 visualization.
-
-You'll need `npm` installed, as well as Python3.5 or greater.
+You should also clone the Rekall repository to get the tutorial notebook:
+```
+git clone https://github.com/scanner-research/rekall
+```
 
 ### VGrid:
+You'll need `npm` installed, as well as Python3.5 or greater.
 ```
 npm install --save react react-dom mobx mobx-react
 npm install --save @wcrichto/vgrid
