@@ -12,7 +12,7 @@ def getter_accessor(row, field):
     like Pandas/Spark dataframes. Returns ``row[field]``."""
     return row[field]
 
-def attrgetter_accesor(row, field):
+def attrgetter_accessor(row, field):
     """Accessor for iterables whose fields are put into class attributes,
     like Django querysets. Returns the equivalent of ``row.field``."""
     return attrgetter(field)(row)
@@ -77,7 +77,7 @@ def ism_from_iterable_with_schema_bounds1D(iterable, key_accessor,
         "t1": "t1",
         "t2": "t2"
     }
-    schema_final.update(schema)
+    schema_final.update(bounds_schema)
     def key_parser(item):
         return key_accessor(item, schema_final['key'])
     def bounds_parser(item):
@@ -85,7 +85,7 @@ def ism_from_iterable_with_schema_bounds1D(iterable, key_accessor,
             key_accessor(item, schema_final['t1']),
             key_accessor(item, schema_final['t2']))
     return IntervalSetMapping.from_iterable(iterable, key_parser,
-        bounds_parser, payload_parser, progress, total)
+        bounds_parser, with_payload, progress, total)
     
 def ism_from_iterable_with_schema_bounds3D(iterable, key_accessor,
         bounds_schema={}, with_payload=lambda x: None, progress=False,
@@ -157,7 +157,7 @@ def ism_from_iterable_with_schema_bounds3D(iterable, key_accessor,
         "t1": "t1",
         "t2": "t2"
     }
-    schema_final.update(schema)
+    schema_final.update(bounds_schema)
     def key_parser(item):
         return key_accessor(item, schema_final['key'])
     def bounds_parser(item):
@@ -171,10 +171,10 @@ def ism_from_iterable_with_schema_bounds3D(iterable, key_accessor,
                 kwargs[k] = key_accessor(item, schema_final[k])
         return Bounds3D(*args, **kwargs)
     return IntervalSetMapping.from_iterable(iterable, key_parser,
-        bounds_parser, payload_parser, progress, total)
+        bounds_parser, with_payload, progress, total)
 
 # from Django QS
-def ism_from_django_qs(qs, bounds_class=Bounds3D, bounds_schema={},
+def ism_from_django_qs(qs, bounds_class=Bounds3D, bounds_schema={}, with_payload=None,
         progress=None):
     """Default constructor for Django QuerySets.
 
@@ -240,16 +240,19 @@ def ism_from_django_qs(qs, bounds_class=Bounds3D, bounds_schema={},
     if progress is not None:
         total = qs.count()
     def payload_parser(record):
-        if "payload" in final_schema:
-            return django_accessor(record, final_schema["payload"])
+        if not with_payload is None:
+            return with_payload(record)
         else:
-            return None
+            if "payload" in final_schema:
+                return django_accessor(record, final_schema["payload"])
+            else:
+                return None
     if bounds_class == Bounds3D:
-        return ism_from_iterable_with_schema_bounds3d(qs, django_accessor,
+        return ism_from_iterable_with_schema_bounds3D(qs, django_accessor,
             bounds_schema=final_schema, with_payload=payload_parser,
             progress=progress, total=total)
     elif bounds_class == Bounds1D:
-        return ism_from_iterable_with_schema_bounds1d(qs, django_accessor,
+        return ism_from_iterable_with_schema_bounds1D(qs, django_accessor,
             bounds_schema=final_schema, with_payload=payload_parser,
             progress=progress, total=total)
     else:
@@ -317,11 +320,11 @@ def ism_from_df(df, bounds_class=Bounds3D, bounds_schema={}, progress=None,
         else:
             return None
     if bounds_class == Bounds3D:
-        return ism_from_iterable_with_schema_bounds3d(qs, getter_accessor,
+        return ism_from_iterable_with_schema_bounds3D(qs, getter_accessor,
             bounds_schema=final_schema, with_payload=payload_parser,
             progress=progress, total=total)
     elif bounds_class == Bounds1D:
-        return ism_from_iterable_with_schema_bounds1d(qs, getter_accessor,
+        return ism_from_iterable_with_schema_bounds1D(qs, getter_accessor,
             bounds_schema=final_schema, with_payload=payload_parser,
             progress=progress, total=total)
     else:

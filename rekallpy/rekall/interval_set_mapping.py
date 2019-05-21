@@ -22,6 +22,7 @@ from operator import attrgetter
 from types import MethodType
 from tqdm import tqdm
 
+from rekall.interval import Interval
 from rekall.interval_set import IntervalSet
 from rekall.helpers import perf_count
 
@@ -191,7 +192,7 @@ class IntervalSetMapping(MutableMapping):
         for row in (tqdm(iterable, total=total)
                 if progress and total is not None else tqdm(iterable)
                 if progress else iterable):
-            interval = Interval(bounds_parser(row), p_parser(row))
+            interval = Interval(bounds_parser(row), payload_parser(row))
             key = key_parser(row)
             if key in key_to_intervals:
                 key_to_intervals[key].append(interval)
