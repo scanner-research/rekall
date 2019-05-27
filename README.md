@@ -70,7 +70,7 @@ The Rekall JavaScript API must be installed in the context of a JavaScript
 application using the [npm package structure](https://docs.npmjs.com/about-packages-and-modules).
 You must have [npm](https://www.npmjs.com/get-npm) installed.
 ```
-npm install --save @wcrichto/vgrid
+npm install --save @wcrichto/rekall
 ```
 
 Now that you've installed Rekall, check out the [tutorials](tutorials/)!
