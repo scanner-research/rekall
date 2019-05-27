@@ -109,7 +109,7 @@ class IntervalSetMapping(MutableMapping):
             "map_payload", "dilate", "group_by_axis", "coalesce", "split"]
     BINARY_METHODS = ["merge", "union", "join", "minus", "filter_against",
             "collect_by_interval"]
-    OUT_OF_SYSTEM_UNARY_METHODS = ["size", "empty", "fold", "match"]
+    OUT_OF_SYSTEM_UNARY_METHODS = ["size", "duration", "empty", "fold", "match"]
 
     def __new__(cls, *args, **kwargs):
         """Creates class instance and adds IntervalSet methods on it."""

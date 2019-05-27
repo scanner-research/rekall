@@ -496,3 +496,10 @@ class TestIntervalSet(unittest.TestCase):
             ])
         self.assertEqual(len(is1), 2)
         self.assertEqual(is1.size(), 2)
+
+    def test_duration(self):
+        is1 = IntervalSet([
+            Interval(Bounds3D(1,5)),
+            Interval(Bounds3D(10,22)),
+            ])
+        self.assertEqual(is1.duration(), 16)

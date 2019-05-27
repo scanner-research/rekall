@@ -82,10 +82,18 @@ class IntervalSet:
         """Returns the number of intervals in the set."""
         return len(self)
 
-    def duration(self):
-        """Returns the sum of length of intervals in the set."""
-        axis = self._primary_axis
-        return sum([intrvl.size(axis) for intrvl in self.get_intervals()])
+    def duration(self, axis=None):
+        """Returns the sum of length of intervals along some axis in the set.
+        
+        Args:
+            axis: The axis to sum the length over.
+
+        Returns:
+            The sum of the size of the intervals along axis.
+        """
+        if axis is None:
+            axis = self._primary_axis
+        return self.fold(lambda total, intrvl: total + intrvl.size(axis), 0)
 
     def empty(self):
         """Returns whether the set is empty."""
