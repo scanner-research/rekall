@@ -6,15 +6,16 @@ from operator import eq
 import unittest
 
 class TestIntervalSet(unittest.TestCase):
-    def assertIntervalsEq(self, intrvl1, intrvl2, payload_cmp=None):
+    def assertIntervalsEq(self, intrvl1, intrvl2,
+            payload_cmp=lambda p1, p2: p1 == p2):
         self.assertEqual(intrvl1['bounds'].data, intrvl2['bounds'].data)
-        self.assertTrue((payload_cmp is None or
-                payload_cmp(intrvl1['payload'], intrvl2['payload'])))
+        self.assertTrue(payload_cmp(intrvl1['payload'], intrvl2['payload']))
 
-    def assertIntervalSetEq(self, is1, is2, payload_cmp=None):
+    def assertIntervalSetEq(self, is1, is2,
+            payload_cmp=lambda p1, p2: p1 == p2):
         self.assertEqual(is1.size(), is2.size())
         for i, j in zip(is1.get_intervals(), is2.get_intervals()):
-            self.assertIntervalsEq(i, j)
+            self.assertIntervalsEq(i, j, payload_cmp)
 
     def compare_interval_sets_in_payload(self):
         def payload_cmp(set1, set2):

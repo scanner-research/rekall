@@ -815,7 +815,10 @@ class IntervalSet:
                            before(max_dist=epsilon)))(merge_candidate, intrvl):
                     output[-1] = Interval(
                         bounds_merge_op(merge_candidate['bounds'],
-                                        intrvl['bounds']))
+                                        intrvl['bounds']),
+                        payload_merge_op(merge_candidate['payload'],
+                                        intrvl['payload'])
+                    )
                 else:
                     output.append(intrvl)
             return output
