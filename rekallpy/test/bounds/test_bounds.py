@@ -117,6 +117,7 @@ class TestBounds(unittest.TestCase):
 
     def test_size1D(self):
         self.assertEqual(Bounds1D(1, 10).size(), 9)
+        self.assertEqual(Bounds1D(1, 10).size(axis=('t1', 't2')), 9)
 
     def test_span3D(self):
         b1 = Bounds3D(0,1,0,0.5,0,0.5)

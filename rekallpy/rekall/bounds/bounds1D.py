@@ -81,9 +81,11 @@ class Bounds1D(Bounds):
         else:
             return None
 
-    def size(self):
+    def size(self, axis=None):
         """Returns the size of this bound."""
-        return utils.bound_size((self['t1'], self['t2']))
+        if axis is None:
+            axis = self.primary_axis()
+        return utils.bound_size((self[axis[0]], self[axis[1]]))
 
     def copy(self):
         """Returns a copy of this bound."""
