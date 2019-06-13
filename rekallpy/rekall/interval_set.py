@@ -47,9 +47,9 @@ class IntervalSet:
         """
         self._intrvls = sorted(list(intrvls))
         self._primary_axis = None
-        self._optimization_window = self._get_optimization_window()
         if len(self._intrvls) > 0:
             self._primary_axis = self._intrvls[0]['bounds'].primary_axis()
+        self._optimization_window = self._get_optimization_window()
 
     def __repr__(self):
         """String representation is a list of Intervals."""
