@@ -784,6 +784,7 @@ class IntervalSet:
                  axis,
                  bounds_merge_op,
                  payload_merge_op=lambda p1, p2: p1,
+                 predicate=None,
                  epsilon=0):
         """Recursively merge all intervals that are touching or overlapping
         along ``axis``.
@@ -809,32 +810,63 @@ class IntervalSet:
         Returns:
             A new IntervalSet of intervals that are disjoint along ``axis`` and
             are at least ``epsilon`` apart.
+            
         """
+        if (len(self._intrvls) == 0):
+            return self
 
-        def update_output(output, intrvl):
-            if len(output) == 0:
-                output.append(intrvl)
-            else:
-                merge_candidate = output[-1]
+        new_coalesced_intrvls = []
+        current_intrvls = []
+
+        for intrvl in self._intrvls:
+            for cur in current_intrvls:
+                #adds any intervals that occured before the start of intrvl
+                if not Bounds.cast({
+			        axis[0] : 't1',
+			        axis[1] : 't2'
+		        })(or_pred(overlaps(),
+                    before(max_dist=epsilon)))(cur, intrvl):
+                        new_coalesced_intrvls.append(cur)
+            #re-update contents of current_intrvls ==> contains all intervals that overlap 
+            current_intrvls = [
+                cur
+                for cur in current_intrvls
                 if Bounds.cast({
                         axis[0]: 't1',
                         axis[1]: 't2'
                 })(or_pred(overlaps(),
-                           before(max_dist=epsilon)))(merge_candidate, intrvl):
-                    output[-1] = Interval(
-                        bounds_merge_op(merge_candidate['bounds'],
+                           before(max_dist=epsilon)))(cur, intrvl)
+            ]
+
+            matched_intrvl = None
+            loc = len(current_intrvls) - 1
+
+            if len(current_intrvls) == 0:
+                current_intrvls.append(intrvl.copy())
+                continue
+            
+            if predicate is None:
+                matched_intrvl = current_intrvls[-1]
+            else:
+                for index, cur in enumerate(current_intrvls):
+                    if predicate(cur, intrvl):
+                        matched_intrvl = cur
+                        loc = index
+
+            if matched_intrvl is None:
+                current_intrvls.append(intrvl)
+            else:
+                current_intrvls[loc] = Interval(
+                        bounds_merge_op(matched_intrvl['bounds'],
                                         intrvl['bounds']),
-                        payload_merge_op(merge_candidate['payload'],
+                        payload_merge_op(matched_intrvl['payload'],
                                         intrvl['payload'])
                     )
-                else:
-                    output.append(intrvl)
-            return output
 
-        return IntervalSet(
-            self.fold(
-                update_output, [],
-                sort_key=lambda intrvl: (intrvl[axis[0]], intrvl[axis[1]])))
+        for cur in current_intrvls:
+            new_coalesced_intrvls.append(cur)
+        
+        return IntervalSet(new_coalesced_intrvls)
 
     def to_json(self, payload_to_json):
         """Converts the interval set to a JSON object.
