@@ -466,6 +466,28 @@ class TestIntervalSet(unittest.TestCase):
         self.assertIntervalSetEq(is1.coalesce(('t1', 't2'), Bounds3D.span,
             payload_plus,epsilon=2),
             IntervalSet([Interval(Bounds3D(1,23),payload=8)]))
+    
+    def test_coalesce_with_pred(self):
+        def overlapping_bboxes(intrvl1, intrvl2):
+            if Bounds3D.X(overlaps())(intrvl1, intrvl2) and Bounds3D.Y(overlaps())(intrvl1, intrvl2):
+                return True
+            else:
+                return False
+        is1 = IntervalSet([
+            Interval(Bounds3D(2,5,0.2,0.8,0.2,0.4),1),
+            Interval(Bounds3D(1,10,0.3,0.4,0.3,0.6),1),
+            Interval(Bounds3D(9,11,0.16,0.17,0.3,0.5),1),
+            Interval(Bounds3D(13,15,0.5,1,0,0.5),1),
+            Interval(Bounds3D(14,19,0.5,1,0,0.5),1),
+        ])
+        target = IntervalSet([
+            Interval(Bounds3D(1,10,0.2,0.8,0.2,0.6),2),
+            Interval(Bounds3D(9,11,0.16,0.17,0.3,0.5),1),
+            Interval(Bounds3D(13,19,0.5,1,0,0.5),2),
+        ])
+        self.assertIntervalSetEq(is1.coalesce(('t1', 't2'), Bounds3D.span,
+            payload_plus, overlapping_bboxes), target)
+        
 
     def test_split(self):
         is1 = IntervalSet([
