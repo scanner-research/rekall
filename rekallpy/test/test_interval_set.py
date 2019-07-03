@@ -474,15 +474,15 @@ class TestIntervalSet(unittest.TestCase):
             else:
                 return False
         is1 = IntervalSet([
-            Interval(Bounds3D(1,10,0.3,0.4,0.3,0.6),1),
             Interval(Bounds3D(2,5,0.2,0.8,0.2,0.4),1),
-            Interval(Bounds3D(10,11,0.16,0.17,0.3,0.5),1),
+            Interval(Bounds3D(1,10,0.3,0.4,0.3,0.6),1),
+            Interval(Bounds3D(9,11,0.16,0.17,0.3,0.5),1),
             Interval(Bounds3D(13,15,0.5,1,0,0.5),1),
             Interval(Bounds3D(14,19,0.5,1,0,0.5),1),
         ])
         target = IntervalSet([
             Interval(Bounds3D(1,10,0.2,0.8,0.2,0.6),2),
-            Interval(Bounds3D(10,11,0.16,0.17,0.3,0.5),1),
+            Interval(Bounds3D(9,11,0.16,0.17,0.3,0.5),1),
             Interval(Bounds3D(13,19,0.5,1,0,0.5),2),
         ])
         self.assertIntervalSetEq(is1.coalesce(('t1', 't2'), Bounds3D.span,

@@ -787,11 +787,12 @@ class IntervalSet:
                  predicate=None,
                  epsilon=0):
         """Recursively merge all intervals that are touching or overlapping
-        along ``axis``.
+        along ``axis``. 
 
         Merge intervals in self if they meet, overlap, or are up to ``epsilon``
-        apart along ``axis``. Repeat the process until all such intervals are
-        merged.
+        apart along ``axis``. If a predicate is specified, intervals will be merged
+        if they meet/overlap and satisfy the predicate. 
+        Repeat the process until all such intervals are merged.
 
         Merges the bounds with ``bounds_merge_op`` and merges payloads with
         ``payload_merge_op``.
@@ -804,6 +805,9 @@ class IntervalSet:
             payload_merge_op (optional): A function that takes in two payloads
                 and merges them. Defaults to a function that returns the first
                 of the two payloads.
+            predicate (optional): A function that takes an interval that is 
+                currently being coalesced and a new interval and returns 
+                whether or not the two intervals should be merged. 
             epsilon (optional): The slack for judging if Intervals meet or
                 overlap. Must be nonnegative. Defaults to 0 (no slack).
 
@@ -811,36 +815,37 @@ class IntervalSet:
             A new IntervalSet of intervals that are disjoint along ``axis`` and
             are at least ``epsilon`` apart.
             
-        """
+        """        
         if (len(self._intrvls) == 0):
             return self
 
         new_coalesced_intrvls = []
+
+        #tracks all intervals that are currently experiencing merging
         current_intrvls = []
 
-        for intrvl in self._intrvls:
+        sorted_intervals = self._intrvls.copy()
+        sorted_intervals = sorted(sorted_intervals, key=lambda intrvl: (intrvl[axis[0]], intrvl[axis[1]]))
+
+        for intrvl in sorted_intervals:
+            new_current_intrvls = []
             for cur in current_intrvls:
-                #adds any intervals that occured before the start of intrvl
-                if not Bounds.cast({
+                if Bounds.cast({
 			        axis[0] : 't1',
 			        axis[1] : 't2'
 		        })(or_pred(overlaps(),
                     before(max_dist=epsilon)))(cur, intrvl):
-                        new_coalesced_intrvls.append(cur)
-            #re-update contents of current_intrvls ==> contains all intervals that overlap 
-            current_intrvls = [
-                cur
-                for cur in current_intrvls
-                if Bounds.cast({
-                        axis[0]: 't1',
-                        axis[1]: 't2'
-                })(or_pred(overlaps(),
-                           before(max_dist=epsilon)))(cur, intrvl)
-            ]
+                        #adds overlapping intervals to new_current_intrvls
+                        new_current_intrvls.append(cur)            
+                else:
+                    #adds all non-overlapping intervals to new_coalesced_intrvls
+                    new_coalesced_intrvls.append(cur)
 
+            current_intrvls = new_current_intrvls
             matched_intrvl = None
             loc = len(current_intrvls) - 1
 
+            #if current_intrvls is empty, we need to start constructing a new set of coalesced intervals
             if len(current_intrvls) == 0:
                 current_intrvls.append(intrvl.copy())
                 continue
@@ -853,6 +858,7 @@ class IntervalSet:
                         matched_intrvl = cur
                         loc = index
 
+            #if no matching interval is found, this implies that intrvl should be the start of a new coalescing interval
             if matched_intrvl is None:
                 current_intrvls.append(intrvl)
             else:
