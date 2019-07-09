@@ -92,7 +92,7 @@ pip3 install -e .
 
 And run tests:
 ```
-python -m unittest discover test
+python3 -m unittest discover test
 ```
 
 [3] Install JavaScript API from source
