@@ -265,10 +265,12 @@ class IntervalSetMapping(MutableMapping):
 
     @staticmethod
     def _get_wrapped_unary_method(name):
-        def method(self, *args, profile=False, **kwargs):
+        def method(self, *args, profile=False, progress_bar=False, **kwargs):
             with perf_count(name, profile):
                 selfmap = self.get_grouped_intervals()
                 keys_to_process = selfmap.keys()
+                if progress_bar:
+                    keys_to_process = tqdm(keys_to_process)
 
                 def func(set1):
                     return getattr(IntervalSet, name)(set1,*args,**kwargs)
@@ -281,11 +283,13 @@ class IntervalSetMapping(MutableMapping):
 
     @staticmethod
     def _get_wrapped_binary_method(name):
-        def method(self, other, *args, profile=False, **kwargs):
+        def method(self, other, *args, profile=False, progress_bar=False, **kwargs):
             with perf_count(name, profile):
                 selfmap = self.get_grouped_intervals()
                 othermap = other.get_grouped_intervals()
                 keys = set(selfmap.keys()).union(othermap.keys())
+                if progress_bar:
+                    keys = tqdm(keys)
 
                 def func(set1, set2):
                     return getattr(IntervalSet, name)(
@@ -302,10 +306,12 @@ class IntervalSetMapping(MutableMapping):
 
     @staticmethod
     def _get_wrapped_out_of_system_unary_method(name):
-        def method(self, *args, profile=False, **kwargs):
+        def method(self, *args, profile=False, progress_bar=False, **kwargs):
             with perf_count(name, profile):
                 selfmap = self.get_grouped_intervals()
                 keys = selfmap.keys()
+                if progress_bar:
+                    keys = tqdm(keys)
 
                 def func(set1):
                     return getattr(IntervalSet, name)(set1,*args,**kwargs)
