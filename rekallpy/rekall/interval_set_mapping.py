@@ -156,7 +156,7 @@ class IntervalSetMapping(MutableMapping):
     def __delitem__(self, key):
         del self._grouped_intervals[key]
     def __iter__(self):
-        return self._grouped_intervals.__iter__()
+        return sorted(list(self._grouped_intervals.keys())).__iter__()
     def __len__(self):
         return len(self._grouped_intervals)
 

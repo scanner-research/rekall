@@ -79,3 +79,9 @@ class TestIntervalSetMapping(unittest.TestCase):
                 filter_empty=False, window=0)
         self.assertEqual(e.keys(), c.keys())
 
+    def test_iterate(self):
+        c = TestIntervalSetMapping.get_collection()
+
+        keys = list(k for k in c)
+        self.assertEqual(keys, sorted(list(c.get_grouped_intervals().keys())))
+
