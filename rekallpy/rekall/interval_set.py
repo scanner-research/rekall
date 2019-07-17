@@ -338,7 +338,7 @@ class IntervalSet:
         ]
         return IntervalSet(output)
 
-    def minus(self, other, axis=None, window=None):
+    def minus(self, other, axis=None, window=None, predicate=None):
         """Subtract one IntervalSet from the other across some axis.
 
         Calculates the interval difference between intervals in self and
@@ -346,7 +346,8 @@ class IntervalSet:
 
         In particular, ``a.minus(b)`` will produce a new set of Intervals that
         maximally covers the Intervals in ``a`` without intersecting any of
-        the intervals in ``b`` on ``axis``.
+        the intervals in ``b`` on ``axis``, but only if they pass the
+        ``predicate``.
 
         The difference between two intervals can produce up to two new
         intervals.
@@ -376,6 +377,15 @@ class IntervalSet:
             axis (optional): The axis to subtract on. Represented as a pair of
                 co-ordinates, such as ``('t1', 't2')``. Defaults to ``None``,
                 which uses the ``primary_axis`` of ``self``.
+            window (optional): Restrict interval pairs to those within
+                window of each other along the primary axis.
+                Defaults to None which means using the default optimization
+                window associated with self. See class Documentation for more
+                detail.
+            predicate (optional): A function that takes one interval in self
+                and an interval in other and returns a bool.
+                Only counts intervals in other that pass the predicate for the
+                minus operation.
 
         Returns:
             A new IntervalSet with the results from the subtraction. It may
@@ -439,10 +449,12 @@ class IntervalSet:
             # Take only nontrivial overlaps
             to_subtract = sorted([
                 i for i in overlapped
-                if (i.size(axis) > 0 and Bounds.cast({
+                if (i.size(axis) > 0 and
+                Bounds.cast({
                     't1': axis[0],
                     't2': axis[1]
-                })(overlaps())(intrvl, i))
+                })(overlaps())(intrvl, i) and
+                (predicate is None or predicate(intrvl, i)))
             ],
                                  key=lambda i: (i[axis[0]], i[axis[1]]))
             if len(to_subtract) == 0:

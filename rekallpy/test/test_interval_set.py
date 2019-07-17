@@ -255,6 +255,32 @@ class TestIntervalSet(unittest.TestCase):
         is4 = is2.minus(is1)
         self.assertIntervalSetEq(is4, is2)
 
+    def test_minus_predicate(self):
+        is1 = IntervalSet([
+            Interval(Bounds3D(1, 10,0,0.5,0.2,0.8),1),
+            Interval(Bounds3D(3, 15,0,1,0,1),2)])
+        is2 = IntervalSet([
+            Interval(Bounds3D(2,2.5),1),
+            Interval(Bounds3D(2,2.7),1),
+            Interval(Bounds3D(2.9,3.5),1),
+            Interval(Bounds3D(3.5,3.6),1),
+            Interval(Bounds3D(5,7),2),
+            Interval(Bounds3D(9,12),2),
+            ])
+        is3 = is1.minus(is2, predicate=payload_satisfies(
+            lambda p1, p2: p1 == p2
+        ))
+        target = IntervalSet([
+            Interval(Bounds3D(1,2,0,0.5,0.2,0.8),1),
+            Interval(Bounds3D(2.7, 2.9, 0,0.5,0.2,0.8),1),
+            Interval(Bounds3D(3.6,10,0,0.5,0.2,0.8),1),
+            Interval(Bounds3D(3,5), payload=2),
+            Interval(Bounds3D(7,9), payload=2),
+            Interval(Bounds3D(12,15), payload=2),
+            ])
+        self.assertIntervalSetEq(is3, target, eq)
+         
+
     def test_match(self):
         left_box_frame_1 = Interval(Bounds3D(1,1,0.1,0.4,0.4,0.8))
         right_box_frame_1 = Interval(Bounds3D(1,1,0.6,0.9,0.3,0.7))
