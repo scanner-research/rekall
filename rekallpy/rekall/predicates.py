@@ -912,6 +912,35 @@ def contains():
     """
     return lambda bbox1, bbox2: inside()(bbox2, bbox1)
 
+def _iou(bbox1, bbox2):
+    """Compute intersection over union of two bounding boxes."""
+    x1 = max(bbox1['x1'], bbox2['x1'])
+    y1 = max(bbox1['y1'], bbox2['y1'])
+    x2 = min(bbox1['x2'], bbox2['x2'])
+    y2 = min(bbox1['y2'], bbox2['y2'])
+
+    if x2 <= x1 or y2 <= y1:
+        return 0
+
+    intersection_area = _area({'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2})
+
+    union_area = _area(bbox1) + _area(bbox2) - intersection_area
+
+    return intersection_area / union_area
+
+def iou_at_least(n):
+    """Returns a function that takes two 2D bounding boxes and computes whether
+    their intersection over area is at least ``n``.
+    
+    Args:
+        n: Minimum IOU (float).
+
+    Returns:
+        A function that takes in two 2D bounding boxes and returns ``True`` if
+        their IOU is at least ``n``.
+    """
+    return lambda bbox1, bbox2: _iou(bbox1, bbox2) > n
+
 # List predicates
 def length_exactly(n):
     """Returns a function that checks whether a list has length exactly ``n``.
