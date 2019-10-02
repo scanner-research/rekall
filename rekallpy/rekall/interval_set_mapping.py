@@ -159,6 +159,14 @@ class IntervalSetMapping(MutableMapping):
         return sorted(list(self._grouped_intervals.keys())).__iter__()
     def __len__(self):
         return len(self._grouped_intervals)
+    
+    # Get keys, items, values from underlying dict
+    def keys(self):
+        return self._grouped_intervals.keys()
+    def values(self):
+        return self._grouped_intervals.values()
+    def items(self):
+        return self._grouped_intervals.items()
 
     @classmethod
     def from_iterable(cls, iterable, key_parser, bounds_parser, 
