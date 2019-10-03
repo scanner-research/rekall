@@ -1,15 +1,18 @@
-# rekall: spatiotemporal query language
+# rekall: compositional video event specification
 
 [![Build Status](https://travis-ci.com/scanner-research/rekall.svg?branch=master)](https://travis-ci.com/scanner-research/rekall)
 [![Documentation Status](https://readthedocs.org/projects/rekallpy/badge/?version=latest)](https://rekallpy.readthedocs.io/en/latest/?badge=latest)
 
-Rekall is a spatiotemporal query language. It operates over sets of intervals
-and allows for combining and filtering on temporal and spatial predicates.
-In combination with the [VGrid](https://github.com/scanner-research/vgrid)
-visualization widget, Rekall can be used to filter and visualize spatiotemporal
-data:
+Rekall is a library for compositional video event specification.
+We use Rekall to detect new events in video -- such as interviews and
+commercials in TV news broadcasts, or action sequences in Hollywood films -- by
+composing the outputs of pre-trained computer vision models:
 
-![rekall_preview](figs/rekall_preview.png)
+| ![interviews1](figs/interview_clip2.gif) | ![commercials1](commercials2.gif) |
+| ![action_sequence](figs/action_sequence1.gif) | ![parking_spot](parking_spot.gif) |
+
+Check out our [tech report](http://www.danfu.org/projects/rekall-tech-report/)
+for more details and demo videos.
 
 Rekall has a main [Python API](https://github.com/scanner-research/rekall/tree/master/rekallpy)
 for all the core interval processing operations. Rekall also has a
