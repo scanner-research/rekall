@@ -12,29 +12,21 @@ import matplotlib.pyplot as plt
 urllib3.disable_warnings()
 
 # Intel data
-VIDEO_COLLECTION_BASEURL_INTEL = "http://olimar.stanford.edu/hdd/intel_self_driving/" 
-VIDEO_METADATA_FILENAME_INTEL = "intel_metadata.json"
+VIDEO_COLLECTION_BASEURL_INTEL = "http://olimar.stanford.edu/hdd/rekall_tutorials/cydet/" 
+VIDEO_METADATA_FILENAME_INTEL = "metadata.json"
 req = requests.get(os.path.join(VIDEO_COLLECTION_BASEURL_INTEL, VIDEO_METADATA_FILENAME_INTEL), verify=False)
 video_collection_intel = sorted(req.json(), key=lambda vm: vm['filename'])
 
 maskrcnn_bbox_files_intel = [ 'maskrcnn_bboxes_0001.pkl', 'maskrcnn_bboxes_0004.pkl' ]
-
-# Names of the cyclist files
-cyclist_bbox_files_intel = [ 'cyclist_labels_0001.pkl', 'cyclist_labels_0004.pkl' ]
 
 maskrcnn_bboxes_intel = []
 for bbox_file in maskrcnn_bbox_files_intel:
     req = requests.get(os.path.join(VIDEO_COLLECTION_BASEURL_INTEL, bbox_file), verify=False)
     maskrcnn_bboxes_intel.append(pickle.loads(req.content))
     
-cyclist_bboxes_intel = []
-for bbox_file in cyclist_bbox_files_intel:
-    req = requests.get(os.path.join(VIDEO_COLLECTION_BASEURL_INTEL, bbox_file), verify=False)
-    cyclist_bboxes_intel.append(pickle.loads(req.content))
-    
 video_metadata_intel = [
-    VideoMetadata(v["filename"], i, v["fps"], v["num_frames"], v["width"], v["height"])
-    for i, v in enumerate(video_collection_intel) if i in [0, 3]
+    VideoMetadata(v["filename"], v["id"], v["fps"], int(v["num_frames"]), v["width"], v["height"])
+    for v in video_collection_intel
 ]
 
 def get_maskrcnn_bboxes():
