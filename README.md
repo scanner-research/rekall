@@ -13,7 +13,7 @@ composing the outputs of pre-trained computer vision models:
     <img src="figs/interview_clip2.gif" width="200">
   </span>
   <span>
-    <img src="figs/commercials2.gif" width="200">
+    <img src="figs/commercials1.gif" width="200">
   </span>
   <span>
     <img src="figs/action_sequence1.gif" width="200">
