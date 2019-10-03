@@ -6,7 +6,7 @@
 Rekall is a library for compositional video event specification.
 We use Rekall to detect new events in video -- such as interviews and
 commercials in TV news broadcasts, or action sequences in Hollywood films -- by
-composing the outputs of pre-trained computer vision models:
+composing the outputs of pre-trained computer vision models.
 
 <div>
   <span>
@@ -47,26 +47,45 @@ Rekall:
 from rekall import Interval, IntervalSet, IntervalSetMapping, Bounds3D
 import urllib3, requests, os
 
-# Load bounding box info from JSON files on server
 urllib3.disable_warnings()
-VIDEO_COLLECTION_BASEURL = "https://olimar.stanford.edu/hdd/rekall_tutorials/basics/"
-metadata_files = [ 'driving1.json', 'driving2.json', 'driving3.json', 'driving4.json' ]
-driving_metadata = [ requests.get(os.path.join(VIDEO_COLLECTION_BASEURL, metadata_file),
-                                  verify=False).json()
-                    for metadata_file in metadata_files ]
+VIDEO_COLLECTION_BASEURL = "http://olimar.stanford.edu/hdd/rekall_tutorials/cydet/" 
+VIDEO_METADATA_FILENAME = "metadata.json"
+req = requests.get(os.path.join(VIDEO_COLLECTION_BASEURL, VIDEO_METADATA_FILENAME), verify=False)
+video_collection = sorted(req.json(), key=lambda vm: vm['filename'])
 
-# Load bounding box data into Rekall
-bbox_ism = IntervalSetMapping({
-    video_file: IntervalSet([
-        Interval(Bounds3D(t1=f['frame'], t2=(f['frame'] + 1),
-                          x1=bbox['x1'], x2=bbox['x2'],
-                          y1=bbox['y1'], y2=bbox['y2']),
-                 payload = { 'class': bbox['class'], 'score': bbox['score'] })
-        for f in metadata
-        for bbox in f['bboxes']
+video_metadata = [
+    VideoMetadata(v["filename"], v["id"], v["fps"], int(v["num_frames"]), v["width"], v["height"])
+    for v in video_collection
+]
+
+maskrcnn_bbox_files = [ 'maskrcnn_bboxes_0001.pkl', 'maskrcnn_bboxes_0004.pkl' ]
+
+maskrcnn_bboxes = []
+for bbox_file in maskrcnn_bbox_files:
+    req = requests.get(os.path.join(VIDEO_COLLECTION_BASEURL, bbox_file), verify=False)
+    maskrcnn_bboxes.append(pickle.loads(req.content))
+
+# Load Mask R-CNN data into Rekall
+maskrcnn_bboxes_ism = IntervalSetMapping({
+    vm.id: IntervalSet([
+        Interval(
+            Bounds3D(
+                t1 = frame_num / vm.fps,
+                t2 = (frame_num + 1) / vm.fps,
+                x1 = bbox[0] / vm.width,
+                x2 = bbox[2] / vm.width,
+                y1 = bbox[1] / vm.height,
+                y2 = bbox[3] / vm.height
+            ),
+            payload = {
+                'class': bbox[4],
+                'score': bbox[5]
+            }
+        )
+        for frame_num, bboxes_in_frame in enumerate(maskrcnn_frame_list)
+        for bbox in bboxes_in_frame
     ])
-    for video_file, metadata in zip([ 'driving1.mp4', 'driving2.mp4', 'driving3.mp4', 'driving4.mp4' ],
-                                    driving_metadata)
+    for vm, maskrcnn_frame_list in zip(video_metadata, maskrcnn_bboxes)
 })
 ```
 Check out the [tutorials](tutorials/) for more on how Rekall can be used to
