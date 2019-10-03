@@ -8,6 +8,7 @@ We use Rekall to detect new events in video -- such as interviews and
 commercials in TV news broadcasts, or action sequences in Hollywood films -- by
 composing the outputs of pre-trained computer vision models:
 
+<img src="figs/interview_clip2.gif" width="100">
 ![interviews1](figs/interview_clip2.gif | width=100) ![commercials1](figs/commercials2.gif | width=100)
 ![action_sequence](figs/action_sequence1.gif | width=100) ![parking_spot](figs/parking_spot.gif | width=100)
 
