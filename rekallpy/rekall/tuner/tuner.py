@@ -2,7 +2,7 @@
 inherit from.
 """
 
-import time
+from time import strftime, time
 import os
 import pickle
 
@@ -49,6 +49,7 @@ class Tuner:
         self.eval_fn = eval_fn
         self.maximize = maximize
         self.budget = budget
+        self.log = log
 
         if self.log:
             # Logging subdirectory
@@ -69,18 +70,18 @@ class Tuner:
 
     def evaluate_config(self, config):
         """Evaluate the config."""
-        start = time.time()
+        start = time()
         score = self.eval_fn(config)
         self.scores.append(score)
         if (self.best_score is None or
             (self.maximize and score > self.best_score) or
-            (self.minimize and score < self.best_score)):
+            (not self.maximize and score < self.best_score)):
             self.best_score = score
             self.best_config = config
             if self.log:
                 self.log_msg('New best score: {}'.format(score))
         self.cost == 1
-        end = time.time()
+        end = time()
         self.execution_times.append(end - start)
 
         return score
@@ -88,7 +89,7 @@ class Tuner:
     def log_msg(self, msg):
         """Log something to the log file."""
         if self.log:
-            with open(self.log_path, 'aw') as f:
+            with open(self.log_path, 'a') as f:
                 f.write('{}\n'.format(msg))
                 f.close()
 
@@ -106,8 +107,8 @@ class Tuner:
                     'cost': self.cost
                 }, f)
 
-        return self.best_score, self.best_config, self.scores,
-            self.execution_times, self.cost
+        return (self.best_score, self.best_config, self.scores,
+            self.execution_times, self.cost)
 
     def tune_impl(self, **kwargs):
         """The implementation of the tuning algorithm.

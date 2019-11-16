@@ -5,14 +5,14 @@ import random
 from tqdm import tqdm
 
 class RandomTuner(Tuner):
-    @classMethod
+    @classmethod
     def generate_configs(cls, search_space, num_configs, seed = None):
         """Randomly generate ``num_configs`` configurations."""
         if seed is not None:
             random.seed(seed)
 
         configs = []
-        for i in range(budget):
+        for i in range(num_configs):
             config = {}
             for k in search_space:
                 param = search_space[k]
@@ -25,7 +25,7 @@ class RandomTuner(Tuner):
                     #     config[k] = choices[:random.randint(1, len(param['subset']))]
                 elif isinstance(param, list):
                     config[k] = random.choice(param)
-                    configs.append(config)
+            configs.append(config)
 
         return configs
 
@@ -43,9 +43,9 @@ class RandomTuner(Tuner):
 
         configs = RandomTuner.generate_configs(
             self.search_space,
-            budget,
+            self.budget,
             seed = seed
         )
 
         for config in tqdm(configs):
-            self.evaluate_config
+            self.evaluate_config(config)
