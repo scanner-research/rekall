@@ -72,6 +72,7 @@ class Tuner:
         """Evaluate the config."""
         start = time()
         score = self.eval_fn(config)
+        self.cost += 1
         self.scores.append(score)
         if (self.best_score is None or
             (self.maximize and score > self.best_score) or
@@ -79,8 +80,8 @@ class Tuner:
             self.best_score = score
             self.best_config = config
             if self.log:
-                self.log_msg('New best score: {}'.format(score))
-        self.cost == 1
+                self.log_msg('New best score: {}, current cost: {}'.format(
+                    score, self.cost))
         end = time()
         self.execution_times.append(end - start)
 
