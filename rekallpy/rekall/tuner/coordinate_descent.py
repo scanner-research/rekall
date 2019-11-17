@@ -172,6 +172,9 @@ class CoordinateDescentTuner(Tuner):
                             (not self.maximize and score < max_score)):
                             best_choice = choice
                             max_score = score
+                        
+                        if self.cost >= self.budget:
+                            break
                     self.log_msg('Old: {}, new: {}'.format(orig_val, best_choice))
                     if best_choice != orig_val:
                         changed = True
