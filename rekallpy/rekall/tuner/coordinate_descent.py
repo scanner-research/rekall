@@ -1,7 +1,7 @@
 """This module performs coordinate descent over the search space."""
 
 from rekall.tuner import Tuner
-from rekall.tuner.random_tuner import RandomTuner
+from rekall.tuner.random import RandomTuner
 
 class CoordinateDescentTuner(Tuner):
     
