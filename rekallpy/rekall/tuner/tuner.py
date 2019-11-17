@@ -50,6 +50,9 @@ class Tuner:
         self.maximize = maximize
         self.budget = budget
         self.log = log
+        self.orig_log_dir = log_dir
+        self.orig_run_dir = run_dir
+        self.orig_run_name = run_name
 
         if self.log:
             # Logging subdirectory
