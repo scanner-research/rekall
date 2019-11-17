@@ -55,7 +55,7 @@ class CoordinateDescentTuner(Tuner):
 
         # Find the optimal value of l
         prev_score = score
-        while local_cost < budget:
+        while local_cost < budget and self.cost < self.budget:
             if cur_val + delta > maxval or cur_val + delta < minval:
                 break
             cur_val += delta
@@ -85,12 +85,16 @@ class CoordinateDescentTuner(Tuner):
         If all the co-ordinates stay the same, try again with alpha = alpha * decay_rate.
         
         args in kwargs:
-            'alpha': initial alpha value for line search
-            'decay_rate': rate to decay alpha
-            'init_method': How to iitialize the first config.
-                Either 'average' or 'random'. If not specified, default to 'average'.
+            alpha: initial alpha value for line search
+            decay_rate: rate to decay alpha
+            init_method: How to initialize the first config.
+                One of ['average', 'random'].
+                If not specified, default to 'average'.
                 'average' initializes the config at the average of continuous ranges,
                 'random' randomly initializes the config.
+                If start_config was specified upon initialization, use that value always.
+            line_search_budget: Budget to give to line search. Must be at least 2.
+                Defaults to 10.
         '''
         if 'alpha' not in kwargs or 'decay_rate' not in kwargs:
             print('Coordinate descent requires alpha and decay_rate!')
@@ -103,10 +107,17 @@ class CoordinateDescentTuner(Tuner):
             init_method = kwargs['init_method']
         else:
             init_method = 'average'
+        
+        if 'line_search_budget' in kwargs:
+            line_search_budget = kwargs['line_search_budget']
+        else:
+            line_search_budget = 10
 
         coordinates = sorted(list(self.search_space.keys()))
-
-        if init_method is 'average':
+        
+        if self.start_config is not None:
+            config = self.start_config
+        elif init_method is 'average':
             config = {}
 
             # Initialize the config
@@ -126,8 +137,13 @@ class CoordinateDescentTuner(Tuner):
         else:
             print('{} is invalid init_method!'.format(init_method))
             return
-
-        score = self.evaluate_config(config)
+        
+        if self.start_config is not None and self.start_score is not None:
+            score = self.start_score
+            self.best_score = score
+            self.log_msg('Starting score: {}'.format(score))
+        else:
+            score = self.evaluate_config(config)
 
         cur_score = score
         rounds = 0
@@ -165,7 +181,7 @@ class CoordinateDescentTuner(Tuner):
                 elif isinstance(param, dict):
                     if 'range' in param:
                         best_choice, max_score = self.line_search(
-                            config, coordinate, alpha, 10,
+                            config, coordinate, alpha, line_search_budget,
                             cur_score = cur_score)
 
                         self.log_msg('Old: {}, New: {}'.format(orig_val, best_choice))

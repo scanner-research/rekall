@@ -16,7 +16,9 @@ class Tuner:
         log=True,
         log_dir=None,
         run_dir=None,
-        run_name=None
+        run_name=None,
+        start_config=None,
+        start_score=None
     ):
         """Initializes a tuner (see sub-classes for explicit instantiations).
         
@@ -33,6 +35,10 @@ class Tuner:
             log_dir (string): Directory to log all results to
             run_dir (string): Directory to log results from a set of runs
             run_name (string): Name of this run
+            start_config (dict): Some tuners ask for a starting configuration.
+                If start_config is specified, start with this config.
+            start_score (float): If start_config is specified, you can also specify
+                its score if you know it ahead of time.
 
         Example:
             search_space = {
@@ -42,8 +48,8 @@ class Tuner:
         """
         self.scores = []
         self.execution_times = []
-        self.best_score = None
-        self.best_config = None
+        self.best_config = start_config
+        self.best_score = start_score
         self.cost = 0
         self.search_space = search_space
         self.eval_fn = eval_fn
@@ -53,6 +59,8 @@ class Tuner:
         self.orig_log_dir = log_dir
         self.orig_run_dir = run_dir
         self.orig_run_name = run_name
+        self.start_config = start_config
+        self.start_score = start_score
 
         if self.log:
             # Logging subdirectory
