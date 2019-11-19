@@ -4,6 +4,7 @@ inherit from.
 
 from time import strftime, time
 import os
+import sys
 import pickle
 
 class Tuner:
@@ -91,21 +92,26 @@ class Tuner:
 
     def evaluate_config(self, config):
         """Evaluate the config."""
-        start = time()
-        eval_fn_output = self.eval_fn(config)
-        score = self.score_fn(eval_fn_output)
-        self.cost += 1
-        self.scores.append(self.score_log_fn(eval_fn_output))
-        if (self.best_score is None or
-            (self.maximize and score > self.best_score) or
-            (not self.maximize and score < self.best_score)):
-            self.best_score = score
-            self.best_config = config
-            if self.log:
-                self.log_msg('New best score: {}, current cost: {}'.format(
-                    score, self.cost))
-        end = time()
-        self.execution_times.append(end - start)
+        score = -1000000 if self.maximize else 1000000
+
+        try:
+            start = time()
+            eval_fn_output = self.eval_fn(config)
+            score = self.score_fn(eval_fn_output)
+            self.cost += 1
+            self.scores.append(self.score_log_fn(eval_fn_output))
+            if (self.best_score is None or
+                (self.maximize and score > self.best_score) or
+                (not self.maximize and score < self.best_score)):
+                self.best_score = score
+                self.best_config = config
+                if self.log:
+                    self.log_msg('New best score: {}, current cost: {}'.format(
+                        score, self.cost))
+            end = time()
+            self.execution_times.append(end - start)
+        except:
+            print('Error:', sys.exc_info()[0])
 
         return score
 
