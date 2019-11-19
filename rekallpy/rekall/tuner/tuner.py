@@ -18,7 +18,9 @@ class Tuner:
         run_dir=None,
         run_name=None,
         start_config=None,
-        start_score=None
+        start_score=None,
+        score_fn=lambda x: x,
+        score_log_fn=lambda x: x
     ):
         """Initializes a tuner (see sub-classes for explicit instantiations).
         
@@ -39,6 +41,12 @@ class Tuner:
                 If start_config is specified, start with this config.
             start_score (float): If start_config is specified, you can also specify
                 its score if you know it ahead of time.
+            score_fn: Your eval function may not return exactly the value you
+                want to optimize. This function parses the output of `eval_fn`
+                to pass to the optimizer.
+            score_log_fn: Your eval function may not return exactly what you
+                want to log. This function parses the output of `eval_fn` to
+                log.
 
         Example:
             search_space = {
@@ -61,6 +69,8 @@ class Tuner:
         self.orig_run_name = run_name
         self.start_config = start_config
         self.start_score = start_score
+        self.score_fn = score_fn
+        self.score_log_fn = score_log_fn
 
         if self.log:
             # Logging subdirectory
@@ -82,9 +92,10 @@ class Tuner:
     def evaluate_config(self, config):
         """Evaluate the config."""
         start = time()
-        score = self.eval_fn(config)
+        eval_fn_output = self.eval_fn(config)
+        score = self.score_fn(eval_fn_output)
         self.cost += 1
-        self.scores.append(score)
+        self.scores.append(self.score_log_fn(eval_fn_output))
         if (self.best_score is None or
             (self.maximize and score > self.best_score) or
             (not self.maximize and score < self.best_score)):
