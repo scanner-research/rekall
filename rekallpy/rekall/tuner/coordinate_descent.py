@@ -117,7 +117,7 @@ class CoordinateDescentTuner(Tuner):
             line_search_budget = 10
 
         if 'randomize_param_order' in kwargs:
-            randomize_param_order = kwargs['randomize_param_order']
+            randomize_param_order = bool(kwargs['randomize_param_order'])
         else:
             randomize_param_order = False
 
