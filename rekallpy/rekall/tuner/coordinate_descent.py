@@ -153,11 +153,25 @@ class CoordinateDescentTuner(Tuner):
         else:
             score = self.evaluate_config(config)
 
+        def config_to_point(config):
+            coords = sorted(coordinates)
+            point = tuple([
+                config[coord]
+                for coord in coords
+            ])
+
+            return point
+
+        visited_points = set()
+
         cur_score = score
         rounds = 0
+        rounds_since_last_improvement = 0
+        last_best_score = cur_score
         while self.cost < self.budget:
             self.log_msg('Round {}, current cost {}'.format(rounds, self.cost))
             changed = False
+            new_configs = False
 
             if randomize_param_order:
                 random.shuffle(coordinates)
@@ -204,9 +218,19 @@ class CoordinateDescentTuner(Tuner):
                         config[coordinate] = best_choice
                         cur_score = max_score
 
-            if not changed:
+                config_point = config_to_point(config)
+                if config_point not in visited_points:
+                    visited_points.add(config_point)
+                    new_configs = True
+            
+            if cur_score == last_best_score:
+                rounds_since_last_improvement += 1
+            else:
+                rounds_since_last_improvement = 0
+            if not changed or rounds_since_last_improvement >= 5 or not new_configs:
                 alpha *= decay_rate
                 self.log_msg('New alpha: {}, current cost {}'.format(alpha, self.cost))
                 if alpha < .000001:
                     break
+                rounds_since_last_improvement = 0
             rounds += 1
