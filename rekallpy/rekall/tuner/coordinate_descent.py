@@ -2,6 +2,7 @@
 
 from rekall.tuner import Tuner
 from rekall.tuner.random import RandomTuner
+import random
 
 class CoordinateDescentTuner(Tuner):
     
@@ -95,6 +96,8 @@ class CoordinateDescentTuner(Tuner):
                 If start_config was specified upon initialization, use that value always.
             line_search_budget: Budget to give to line search. Must be at least 2.
                 Defaults to 10.
+            randomize_param_order: Whether to randomize the order of coordinates
+                for coordinate descent. Defaults to False.
         '''
         if 'alpha' not in kwargs or 'decay_rate' not in kwargs:
             print('Coordinate descent requires alpha and decay_rate!')
@@ -112,6 +115,11 @@ class CoordinateDescentTuner(Tuner):
             line_search_budget = kwargs['line_search_budget']
         else:
             line_search_budget = 10
+
+        if 'randomize_param_order' in kwargs:
+            randomize_param_order = kwargs['randomize_param_order']
+        else:
+            randomize_param_order = False
 
         coordinates = sorted(list(self.search_space.keys()))
         
@@ -150,6 +158,9 @@ class CoordinateDescentTuner(Tuner):
         while self.cost < self.budget:
             self.log_msg('Round {}, current cost {}'.format(rounds, self.cost))
             changed = False
+
+            if randomize_param_order:
+                random.shuffle(coordinates)
             for coordinate in coordinates:
                 if self.cost > self.budget:
                     break
