@@ -125,7 +125,7 @@ class CoordinateDescentTuner(Tuner):
         
         if self.start_config is not None:
             config = self.start_config
-        elif init_method is 'average':
+        elif init_method == 'average':
             config = {}
 
             # Initialize the config
@@ -140,7 +140,7 @@ class CoordinateDescentTuner(Tuner):
         #                 config[k] = choices[:random.randint(1, len(param['subset']))]
                 elif isinstance(param, list):
                     config[k] = param[0]
-        elif init_method is 'random':
+        elif init_method == 'random':
             config = RandomTuner.generate_configs(self.search_space, 1)[0]
         else:
             print('{} is invalid init_method!'.format(init_method))
