@@ -11,6 +11,7 @@ Submodules
    rekall.bounds
    rekall.predicates
    rekall.stdlib
+   rekall.tuner
    rekall.helpers
    rekall.runtime
 

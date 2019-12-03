@@ -14,6 +14,7 @@ Submodules
    source/rekall.bounds
    source/rekall.predicates
    source/rekall.stdlib
+   source/rekall.tuner
    source/rekall.helpers
    source/rekall.runtime
 
