@@ -1,4 +1,7 @@
-"""This module uses scipy's implementation of Nelder-Mead.
+"""
+NOT FUNCTIONAL YET. DO NOT USE.
+
+This module uses scipy's implementation of Nelder-Mead.
 
 Reference: https://docs.scipy.org/doc/scipy/reference/optimize.minimize-neldermead.html#optimize-minimize-neldermead
 """

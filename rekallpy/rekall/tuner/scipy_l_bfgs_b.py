@@ -1,4 +1,7 @@
-"""This module uses scipy's implementation of the L-BFGS-B optimization
+"""
+NOT FUNCTIONAL YET. DO NOT USE.
+
+This module uses scipy's implementation of the L-BFGS-B optimization
 method for searching through bounded search spaces.
 
 Reference: https://docs.scipy.org/doc/scipy/reference/optimize.minimize-lbfgsb.html#optimize-minimize-lbfgsb"""
