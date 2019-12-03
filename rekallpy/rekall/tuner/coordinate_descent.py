@@ -85,11 +85,11 @@ class CoordinateDescentTuner(Tuner):
             a budget of 10
         If all the co-ordinates stay the same, try again with alpha = alpha * decay_rate.
         
-        args in kwargs:
+        args:
             alpha: initial alpha value for line search
             decay_rate: rate to decay alpha
             init_method: How to initialize the first config.
-                One of ['average', 'random'].
+                One of ``['average', 'random']``.
                 If not specified, default to 'average'.
                 'average' initializes the config at the average of continuous ranges,
                 'random' randomly initializes the config.
