@@ -64,10 +64,15 @@ jupyter nbextension enable --py --sys-prefix vgrid_jupyter
 ```
 
 ### Your First Dataset
-Tutorial to load up a dataset and write your first query.
+Once you've installed Rekall, load up the `Your First Dataset.ipynb` notebook
+on your Jupyter server, and walk through it (note that you may have to change
+the kernel depending on how you installed Rekall).
+This notebook will walk you through loading up a few cable TV news videos, and
+writing a first query to find every time Jake Tapper appears.
 
-If you're bringing your own dataset, follow the instructions to load up your
-own dataset
+If you're bringing your own dataset, follow the instructions at the bottom of
+the notebook to load up your own dataset.
+If you run into any issues, please let us know!
 
 ### Data Annotation
 
