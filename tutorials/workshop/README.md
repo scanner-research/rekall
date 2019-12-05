@@ -14,8 +14,10 @@ Before the workshop, make sure to complete the following steps:
 * [Install](#installation) Rekall
 * [Load up](#your-first-dataset) your first dataset, and write your first
 query (and if you're bringing your own dataset, load up your data)
+<!--
 * [Annotate](#data-annotation) a few ground truth examples of what you want to
 query for
+-->
 
 ### Installation
 
@@ -74,6 +76,8 @@ If you're bringing your own dataset, follow the instructions at the bottom of
 the notebook to load up your own dataset.
 If you run into any issues, please let us know!
 
+<!--
 ### Data Annotation
 
 Coming soon!
+-->
