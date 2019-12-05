@@ -18,7 +18,50 @@ query (and if you're bringing your own dataset, load up your data)
 query for
 
 ### Installation
-Installation instructions go here.
+
+First, clone this repository in the `workshop` branch:
+```
+git clone -b workshop https://github.com/scanner-research/rekall
+```
+
+To run the tutorials and the workshop material, you'll need to install
+[Jupyter](https://jupyter.org/install) and [npm](https://www.npmjs.com/).
+The easiest way is to install
+[anaconda](https://www.anaconda.com/distribution/).
+
+If you have conda installed:
+```
+conda create --name rekall python=3.7 anaconda
+conda activate rekall
+conda install -c conda-forge nodejs
+conda install -c conda-forge nb_conda_kernels
+
+# Install Rekall
+pip install rekallpy
+npm install --save @wcrichto/rekall
+
+# Install Vgrid visualization tools
+npm install --save react react-dom mobx mobx-react
+npm install --save @wcrichto/vgrid
+pip3 install vgridpy
+pip3 install vgrid_jupyter
+jupyter nbextension enable --py --sys-prefix vgrid_jupyter
+```
+
+If you don't have conda installed, make sure you have Jupyter and NPM
+installed, and then run these commands:
+```
+# Install Rekall
+pip install rekallpy
+npm install --save @wcrichto/rekall
+
+# Install Vgrid visualization tools
+npm install --save react react-dom mobx mobx-react
+npm install --save @wcrichto/vgrid
+pip3 install vgridpy
+pip3 install vgrid_jupyter
+jupyter nbextension enable --py --sys-prefix vgrid_jupyter
+```
 
 ### Your First Dataset
 Tutorial to load up a dataset and write your first query.
