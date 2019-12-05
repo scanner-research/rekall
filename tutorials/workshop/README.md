@@ -20,7 +20,7 @@ query for
 ### Installation
 
 First, clone this repository in the `workshop` branch:
-```
+```bash
 git clone -b workshop https://github.com/scanner-research/rekall
 ```
 
@@ -30,7 +30,7 @@ The easiest way is to install
 [anaconda](https://www.anaconda.com/distribution/).
 
 If you have conda installed:
-```
+```bash
 conda create --name rekall python=3.7 anaconda
 conda activate rekall
 conda install -c conda-forge nodejs
@@ -50,7 +50,7 @@ jupyter nbextension enable --py --sys-prefix vgrid_jupyter
 
 If you don't have conda installed, make sure you have Jupyter and NPM
 installed, and then run these commands:
-```
+```bash
 # Install Rekall
 pip install rekallpy
 npm install --save @wcrichto/rekall
