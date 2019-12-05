@@ -31,10 +31,10 @@ The easiest way is to install
 
 If you have conda installed:
 ```bash
-conda create --name rekall python=3.7 anaconda
+conda create -y --name rekall python=3.7 anaconda
 conda activate rekall
-conda install -c conda-forge nodejs
-conda install -c conda-forge nb_conda_kernels
+conda install -y -c conda-forge nodejs
+conda install -y -c conda-forge nb_conda_kernels
 
 # Install Rekall
 pip install rekallpy
