@@ -34,11 +34,25 @@ class Tuner:
             want to log. This function parses the output of `eval_fn` to
             log.
 
-    Example:
+    Example::
+
+        def eval_config(params):
+            # Run the Rekall query
+            query_results = query(params)
+
+            # Evaluate the results
+            score = evaluate(query_results)
+
+            return score
+
         search_space = {
             'param1': [0.0, 1.0, 2.0],          # discrete
             'param2': { 'range': (10.0, 20.0) } # linear range
         }
+
+        tuner = RandomTuner(search_space, eval_config, budget = 50)
+
+        best_score, best_config, score_history, execution_times, total_cost = tuner.tune()
     """
     def __init__(
         self, 
