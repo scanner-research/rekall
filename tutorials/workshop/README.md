@@ -45,8 +45,8 @@ npm install --save @wcrichto/rekall
 # Install Vgrid visualization tools
 npm install --save react react-dom mobx mobx-react
 npm install --save @wcrichto/vgrid
-pip3 install vgridpy
-pip3 install vgrid_jupyter
+pip install vgridpy
+pip install vgrid_jupyter
 jupyter nbextension enable --py --sys-prefix vgrid_jupyter
 ```
 
@@ -60,8 +60,8 @@ npm install --save @wcrichto/rekall
 # Install Vgrid visualization tools
 npm install --save react react-dom mobx mobx-react
 npm install --save @wcrichto/vgrid
-pip3 install vgridpy
-pip3 install vgrid_jupyter
+pip install vgridpy
+pip install vgrid_jupyter
 jupyter nbextension enable --py --sys-prefix vgrid_jupyter
 ```
 
