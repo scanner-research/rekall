@@ -8,6 +8,38 @@ import sys
 import pickle
 
 class Tuner:
+    """Base class for all Tuners (see sub-classes for details).
+    
+    args:
+        search_space (dict): A dictionary of parameters to search over.
+            See note below for more details.
+        eval_fn: Given a configuration, evaluate the black box function and
+            return the score.
+        maximize (bool): Maximize the output of ``eval_fn`` if True,
+            otherwise minimize it.
+        budget (int): Maximum number of times to call the evaluation
+            function.
+        log (bool): Whether to log results
+        log_dir (string): Directory to log all results to
+        run_dir (string): Directory to log results from a set of runs
+        run_name (string): Name of this run
+        start_config (dict): Some tuners ask for a starting configuration.
+            If start_config is specified, start with this config.
+        start_score (float): If start_config is specified, you can also specify
+            its score if you know it ahead of time.
+        score_fn: Your eval function may not return exactly the value you
+            want to optimize. This function parses the output of `eval_fn`
+            to pass to the optimizer.
+        score_log_fn: Your eval function may not return exactly what you
+            want to log. This function parses the output of `eval_fn` to
+            log.
+
+    Example:
+        search_space = {
+            'param1': [0.0, 1.0, 2.0],          # discrete
+            'param2': { 'range': (10.0, 20.0) } # linear range
+        }
+    """
     def __init__(
         self, 
         search_space, 
@@ -23,38 +55,6 @@ class Tuner:
         score_fn=lambda x: x,
         score_log_fn=lambda x: x
     ):
-        """Initializes a tuner (see sub-classes for explicit instantiations).
-        
-        args:
-            search_space (dict): A dictionary of parameters to search over.
-                See note below for more details.
-            eval_fn: Given a configuration, evaluate the black box function and
-                return the score.
-            maximize (bool): Maximize the output of ``eval_fn`` if True,
-                otherwise minimize it.
-            budget (int): Maximum number of times to call the evaluation
-                function.
-            log (bool): Whether to log results
-            log_dir (string): Directory to log all results to
-            run_dir (string): Directory to log results from a set of runs
-            run_name (string): Name of this run
-            start_config (dict): Some tuners ask for a starting configuration.
-                If start_config is specified, start with this config.
-            start_score (float): If start_config is specified, you can also specify
-                its score if you know it ahead of time.
-            score_fn: Your eval function may not return exactly the value you
-                want to optimize. This function parses the output of `eval_fn`
-                to pass to the optimizer.
-            score_log_fn: Your eval function may not return exactly what you
-                want to log. This function parses the output of `eval_fn` to
-                log.
-
-        Example:
-            search_space = {
-                'param1': [0.0, 1.0, 2.0],          # discrete
-                'param2': { 'range': (10.0, 20.0) } # linear range
-            }
-        """
         self.scores = []
         self.execution_times = []
         self.best_config = start_config
