@@ -38,7 +38,9 @@ class Tuner:
 
         def eval_config(params):
             # Run the Rekall query
-            query_results = query(params)
+            query_results = rekall_query(
+                param1 = params['param1'],
+                param2 = params['param2'])
 
             # Evaluate the results
             score = evaluate(query_results)
