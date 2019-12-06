@@ -5,6 +5,7 @@ import random
 from tqdm import tqdm
 
 class RandomTuner(Tuner):
+    """This tuner randomly searches the state space."""
     @classmethod
     def generate_configs(cls, search_space, num_configs, seed = None):
         """Randomly generate ``num_configs`` configurations."""

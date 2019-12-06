@@ -6,6 +6,7 @@ from itertools import product, combinations
 import numpy as np
 
 class GridTuner(Tuner):
+    """This tuner conducts a grid search over the search space."""
     @classmethod
     def generate_configs(cls, search_space, budget):
         """Generate configs that cover the search space in a grid as densely as

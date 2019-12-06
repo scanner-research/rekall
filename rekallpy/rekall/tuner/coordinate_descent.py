@@ -5,6 +5,7 @@ from rekall.tuner.random import RandomTuner
 import random
 
 class CoordinateDescentTuner(Tuner):
+    """This tuner performs coordinate descent over the search space."""
     
     def line_search(self, config, cur_param, epsilon, budget, cur_score = 0):
         '''

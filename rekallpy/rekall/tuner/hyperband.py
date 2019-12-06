@@ -6,7 +6,10 @@ from rekall.tuner.random import RandomTuner
 from rekall.tuner.successive_halving import SuccessiveHalvingTuner
 
 class HyperbandTuner(Tuner):
+    """This tuner performs a hyperband search over the search space.
     
+    See https://arxiv.org/abs/1603.06560.
+    """    
     @classmethod
     def finite_horizon_hyperband_schedule(cls, max_iter, eta):
         logeta = lambda x: math.log(x) / math.log(eta)

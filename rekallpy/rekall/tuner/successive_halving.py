@@ -4,7 +4,8 @@ from rekall.tuner import Tuner
 from rekall.tuner.random import RandomTuner
 
 class SuccessiveHalvingTuner(Tuner):
-    
+    """This tuner does successive halving over the search space."""
+
     @classmethod
     def estimate_cost(cls, eta, N, K, T):
         '''Estimate the cost of successive halving'''
