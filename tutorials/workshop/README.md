@@ -7,6 +7,10 @@ Before coming to the workshop, please complete all the materials in the
 [workshop prep](#workshop-prep) section (this section may get updated with more
 materials as we get closer to the workshop).
 
+During (or after) the workshop, check out the
+[workshop materials](#workshop-materials) section.
+We'll walk through the notebooks throughout the course of the afternoon!
+
 ## Workshop Prep
 
 Before the workshop, make sure to complete the following steps:
@@ -82,3 +86,45 @@ If you run into any issues, please let us know!
 
 Coming soon!
 -->
+
+
+## Workshop Materials
+
+### Your First Rekall Queries
+
+First, we'll walk you through developing the Bernie Sanders interview query that
+appears in the [Rekall paper](https://arxiv.org/abs/1910.02993).
+Get started with `Bernie Sanders Interviews.ipynb`.
+
+Next, we'll have you walk through an empty parking space detection query.
+Check out the `Empty Parking Space Detection.ipynb`.
+We'll walk through that notebook once everyone's had a go at it as well.
+
+### Hands-On Time
+
+Next comes the hands-on time - the purpose of this section of the day is to get
+everyone writing new queries about things that you care about.
+If you brought your own dataset, take the skills that you learned from the last
+two notebooks, and apply them to some of the queries that you're interested in.
+
+If you didn't bring your own dataset, check out
+`Hands-On Time - TV News Data.ipynb`.
+That notebook loads up some TV News data for you and gives you a few example
+queries to try:
+* Find commercials for drugs
+* Find political commercials
+* Find commercials about phones or carriers (Verizon, Sprint, etc)
+* Find instances of panels (multiple people brought on to talk about one subject)
+* Find segments about guns
+
+### Auto-Tuning Your Rekall Queries for Better Performance
+
+Once you've spent some time writing queries, we'll introduce the Rekall tuning
+modules.
+Check out `The Rekall Auto-Tuner.ipynb` to get an introduction to the tuning API.
+
+The Rekall tuning module requires some ground truth annotations - if you came to
+the workshop with some ground truth annotations for your queries, you can use
+these to tune the queries you wrote during the hands-on session now.
+Otherwise, check out `Annotating Ground Truth.ipynb` to see how you can use
+Vgrid to annotate some ground-truth temporal segments.
