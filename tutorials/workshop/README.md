@@ -51,17 +51,18 @@ jupyter nbextension enable --py --sys-prefix vgrid_jupyter
 ```
 
 If you don't have conda installed, make sure you have Jupyter and NPM
-installed, and then run these commands:
+installed, and then run these commands (note that our Python packages are
+Python 3.5+ only):
 ```bash
 # Install Rekall
-pip install rekallpy
+pip3 install rekallpy
 npm install --save @wcrichto/rekall
 
 # Install Vgrid visualization tools
 npm install --save react react-dom mobx mobx-react
 npm install --save @wcrichto/vgrid
-pip install vgridpy
-pip install vgrid_jupyter
+pip3 install vgridpy
+pip3 install vgrid_jupyter
 jupyter nbextension enable --py --sys-prefix vgrid_jupyter
 ```
 
