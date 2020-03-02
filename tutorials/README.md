@@ -42,6 +42,10 @@ static-camera feed of a parking lot using nothing more than the outputs of an
 off-the-shelf object detector.
 
 ## Data Loading and Visualization
-Finally we recommend `03 Data Loading and Visualization.ipynb` after completing
+We recommend `03 Data Loading and Visualization.ipynb` after completing
 the other two tutorials.
 This will walk you through how to load and visualize your own data using Rekall.
+
+## The Rekall Auto-tuner
+`04 The Rekall Auto-Tuner.ipynb` will teach you how to use Rekall's auto-tuner to
+automatically tune the parameters of a query (the "magic numbers").

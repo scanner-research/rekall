@@ -21,6 +21,9 @@ implementations, a one-dimensional `Bounds1D` and a three-dimensional
 `Bounds3D`. `Bounds1D` and `Bounds3D` both come with some useful functions on
 their co-ordinate systems.
 
+### 'rekall.tuner'
+This submodule provides the Rekall auto-tuner.
+
 ### `rekall.predicates`
 This submodule provides a number of useful one-dimensional and two-dimensional
 predicate functions. These functions are often used to filter pairs of
