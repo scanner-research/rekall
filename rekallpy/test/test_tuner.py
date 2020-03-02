@@ -2,7 +2,7 @@ from rekall.tuner import RandomTuner
 import unittest
 
 class TestTuner(unittest.TestCase):
-    def assertTunerRuns(self):
+    def test_tuner_runs(self):
         def eval_config(params):
             return 0.5
 
