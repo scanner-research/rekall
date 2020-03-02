@@ -73,6 +73,43 @@ def get_maskrcnn_bboxes():
     
     return bboxes_ism
 
+def get_ground_truth():
+    interval = 30
+    
+    GT_FOLDER = 'empty_spaces'
+
+    empty_parking_spaces = [
+        pickle.loads(requests.get(
+            os.path.join(
+                os.path.join(VIDEO_COLLECTION_BASEURL, GT_FOLDER),
+                os.path.join(vm.path[:-4], 'gt.pkl')
+            ),
+            verify=False
+        ).content)
+        for vm in video_metadata
+    ]
+    gt_ism = IntervalSetMapping({
+        metadata.id: IntervalSet([
+            Interval(
+                Bounds3D(
+                    t1 = 30 * i / metadata.fps,
+                    t2 = 30 * (i + interval) / metadata.fps,
+                    x1 = bbox[0] / metadata.width + .01,
+                    x2 = bbox[2] / metadata.width - .01,
+                    y1 = bbox[1] / metadata.height + .01,
+                    y2 = bbox[3] / metadata.height - .01
+                )
+            )
+            for i, frame in enumerate(space_frame_list) if (i % interval == 0)
+            for bbox in frame
+        ])
+        for space_frame_list, metadata in tqdm(
+            zip(empty_parking_spaces, video_metadata),
+            total = len(empty_parking_spaces))
+    })
+    
+    return gt_ism
+
 def visualize_helper(box_list):
     vgrid_spec = VGridSpec(
         video_meta = video_metadata,
