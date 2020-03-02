@@ -136,3 +136,16 @@ npm install
 npm run prepublishOnly
 npm link
 ```
+
+## Citation
+
+If you used Rekall or found it useful for you research, please cite our [arXiv paper](https://arxiv.org/abs/1910.02993):
+
+```
+@article{fu2019rekall,
+  author = { Daniel Y. Fu and Will Crichton and James Hong and Xinwei Yao and Haotian Zhang and Anh Truong and Avanika Narayan and Maneesh Agrawala and Christopher R\'e and Kayvon Fatahalian },
+  title = { Rekall: Specifying Video Events using Compositions of Spatiotemporal Labels },
+  year = {2019},
+  journal={arXiv preprint arXiv:1910.02993},
+}
+```
