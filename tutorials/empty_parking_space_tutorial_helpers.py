@@ -1,6 +1,6 @@
 from rekall import Interval, IntervalSet, IntervalSetMapping, Bounds3D
 from rekall.predicates import *
-from vgrid import VGridSpec, VideoMetadata, VideoBlockFormat, FlatFormat
+from vgrid import VGridSpec, VideoMetadata, VideoBlockFormat, FlatFormat, SpatialType_Bbox
 from vgrid_jupyter import VGridWidget
 import urllib3, requests, os
 import pickle
@@ -61,7 +61,8 @@ def get_maskrcnn_bboxes():
                     y1 = bbox[1] / metadata.height,
                     y2 = bbox[3] / metadata.height
                 ),
-                payload = { 'class': bbox[4], 'score': bbox[5] }
+                payload = { 'class': bbox[4], 'score': bbox[5],
+                          'spatial_type': SpatialType_Bbox(text=bbox[4])}
             )
             for i, frame in enumerate(bbox_frame_list) if (i % interval == 0)
             for bbox in frame
