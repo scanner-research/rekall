@@ -13,10 +13,8 @@ git clone https://github.com/scanner-research/rekall
 ```
 
 ### VGrid:
-You'll need `npm` installed, as well as Python3.5 or greater.
+You'll need Python3.5 or greater.
 ```
-npm install --save react react-dom mobx mobx-react
-npm install --save @wcrichto/vgrid
 pip3 install vgridpy
 ```
 
@@ -25,7 +23,7 @@ Or [from source](https://github.com/scanner-research/vgrid/blob/master/DEVELOPME
 ### VGrid Jupyter Plugin:
 ```
 pip3 install vgrid_jupyter
-jupyter nbextension enable --py --sys-prefix vgrid_jupyter
+jupyter-nbextension enable --py --sys-prefix vgrid_jupyter
 ```
 
 Or [from source](https://github.com/scanner-research/vgrid_jupyter#from-source).
