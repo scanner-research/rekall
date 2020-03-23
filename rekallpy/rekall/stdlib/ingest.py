@@ -320,11 +320,11 @@ def ism_from_df(df, bounds_class=Bounds3D, bounds_schema={}, progress=None,
         else:
             return None
     if bounds_class == Bounds3D:
-        return ism_from_iterable_with_schema_bounds3D(qs, getter_accessor,
+        return ism_from_iterable_with_schema_bounds3D(df, getter_accessor,
             bounds_schema=final_schema, with_payload=payload_parser,
             progress=progress, total=total)
     elif bounds_class == Bounds1D:
-        return ism_from_iterable_with_schema_bounds1D(qs, getter_accessor,
+        return ism_from_iterable_with_schema_bounds1D(df, getter_accessor,
             bounds_schema=final_schema, with_payload=payload_parser,
             progress=progress, total=total)
     else:
