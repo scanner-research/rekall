@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 urllib3.disable_warnings()
 
 # Parking lot data
-VIDEO_COLLECTION_BASEURL = "https://olimar.stanford.edu/hdd/parking_lot/user_study"
+VIDEO_COLLECTION_BASEURL = "https://storage.googleapis.com/esper/dan_olimar/parking_lot/user_study"
 VIDEO_METADATA_FILENAME = 'metadata.json'
 
 # Load video file metadata
