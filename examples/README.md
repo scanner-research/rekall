@@ -1,6 +1,6 @@
 # Example code
 
-Some byte-size examples of common Rekall operations.
+Some bite-size examples of common Rekall operations.
 Check out the [tutorials](../tutorials) for detailed walkthroughs and
 explanations.
 Check out the [Python tests](../rekallpy/test) (especially
