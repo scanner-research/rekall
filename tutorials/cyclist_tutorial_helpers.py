@@ -2,7 +2,7 @@ from rekall import Interval, IntervalSet, IntervalSetMapping, Bounds3D
 from rekall.predicates import *
 from vgrid import VGridSpec, VideoMetadata, VideoBlockFormat, FlatFormat, SpatialType_Bbox
 from vgrid_jupyter import VGridWidget
-import urllib3, requests, os
+import urllib3, requests, os, posixpath
 import pickle
 from tqdm import tqdm
 from PIL import Image
@@ -14,14 +14,14 @@ urllib3.disable_warnings()
 # Intel data
 VIDEO_COLLECTION_BASEURL_INTEL = "https://storage.googleapis.com/esper/dan_olimar/rekall_tutorials/cydet" 
 VIDEO_METADATA_FILENAME_INTEL = "metadata.json"
-req = requests.get(os.path.join(VIDEO_COLLECTION_BASEURL_INTEL, VIDEO_METADATA_FILENAME_INTEL), verify=False)
+req = requests.get(posixpath.join(VIDEO_COLLECTION_BASEURL_INTEL, VIDEO_METADATA_FILENAME_INTEL), verify=False)
 video_collection_intel = sorted(req.json(), key=lambda vm: vm['filename'])
 
 maskrcnn_bbox_files_intel = [ 'maskrcnn_bboxes_0001.pkl', 'maskrcnn_bboxes_0004.pkl' ]
 
 maskrcnn_bboxes_intel = []
 for bbox_file in maskrcnn_bbox_files_intel:
-    req = requests.get(os.path.join(VIDEO_COLLECTION_BASEURL_INTEL, bbox_file), verify=False)
+    req = requests.get(posixpath.join(VIDEO_COLLECTION_BASEURL_INTEL, bbox_file), verify=False)
     maskrcnn_bboxes_intel.append(pickle.loads(req.content))
     
 video_metadata_intel = [

@@ -2,7 +2,7 @@ from rekall import Interval, IntervalSet, IntervalSetMapping, Bounds3D
 from rekall.predicates import *
 from vgrid import VGridSpec, VideoMetadata, VideoBlockFormat, FlatFormat, SpatialType_Bbox
 from vgrid_jupyter import VGridWidget
-import urllib3, requests, os
+import urllib3, requests, os, posixpath
 import pickle
 from tqdm import tqdm
 from PIL import Image
@@ -19,7 +19,7 @@ VIDEO_METADATA_FILENAME = 'metadata.json'
 video_metadata = [ VideoMetadata(v['filename'], id=v['id'], fps=v['fps'],
                                  num_frames=v['num_frames'], width=v['width'],
                                  height=v['height'])
-                  for v in requests.get(os.path.join(
+                  for v in requests.get(posixpath.join(
                       VIDEO_COLLECTION_BASEURL, VIDEO_METADATA_FILENAME),
                                         verify=False).json() ]
 
@@ -28,7 +28,7 @@ BBOX_FOLDER = 'bboxes'
 GT_FOLDER = 'empty_spaces'
 
 dev_set = requests.get(
-    os.path.join(VIDEO_COLLECTION_BASEURL, 'dev.txt'), verify=False
+    posixpath.join(VIDEO_COLLECTION_BASEURL, 'dev.txt'), verify=False
 ).content.decode('utf-8').strip().split('\n')
 
 video_metadata_dev = [
@@ -42,9 +42,9 @@ def get_maskrcnn_bboxes():
     interval = 30
     bboxes = [
         pickle.loads(requests.get(
-            os.path.join(
-                os.path.join(VIDEO_COLLECTION_BASEURL, BBOX_FOLDER),
-                os.path.join(vm.path[:-4], 'bboxes.pkl')
+            posixpath.join(
+                posixpath.join(VIDEO_COLLECTION_BASEURL, BBOX_FOLDER),
+                posixpath.join(vm.path[:-4], 'bboxes.pkl')
             ),
             verify=False
         ).content)
@@ -81,9 +81,9 @@ def get_ground_truth():
 
     empty_parking_spaces = [
         pickle.loads(requests.get(
-            os.path.join(
-                os.path.join(VIDEO_COLLECTION_BASEURL, GT_FOLDER),
-                os.path.join(vm.path[:-4], 'gt.pkl')
+            posixpath.join(
+                posixpath.join(VIDEO_COLLECTION_BASEURL, GT_FOLDER),
+                posixpath.join(vm.path[:-4], 'gt.pkl')
             ),
             verify=False
         ).content)
@@ -118,6 +118,6 @@ def visualize_helper(box_list):
             (str(i), box)
             for i, box in enumerate(box_list)
         ]),
-        video_endpoint = os.path.join(VIDEO_COLLECTION_BASEURL, VIDEO_FOLDER)
+        video_endpoint = posixpath.join(VIDEO_COLLECTION_BASEURL, VIDEO_FOLDER)
     )
     return VGridWidget(vgrid_spec = vgrid_spec.to_json_compressed())
