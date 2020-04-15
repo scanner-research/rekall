@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 urllib3.disable_warnings()
 
 # Intel data
-VIDEO_COLLECTION_BASEURL_INTEL = "https://storage.googleapis.com/esper/dan_olimar/rekall_tutorials/cydet/" 
+VIDEO_COLLECTION_BASEURL_INTEL = "https://storage.googleapis.com/esper/dan_olimar/rekall_tutorials/cydet" 
 VIDEO_METADATA_FILENAME_INTEL = "metadata.json"
 req = requests.get(os.path.join(VIDEO_COLLECTION_BASEURL_INTEL, VIDEO_METADATA_FILENAME_INTEL), verify=False)
 video_collection_intel = sorted(req.json(), key=lambda vm: vm['filename'])
