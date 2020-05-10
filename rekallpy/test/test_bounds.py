@@ -59,6 +59,9 @@ class TestBounds(unittest.TestCase):
             def __init__(self, t1, t2, x1, x2):
                 self.data = { 't1': t1, 't2': t2, 'x1': x1, 'x2': x2 }
 
+            def __repr__(self):
+                pass
+
             def __lt__(self, other):
                 return ((self['t1'], self['t2'], self['x1'], self['x2']) <
                         (other['t1'], other['t2'], other['x1'], other['x2']))
@@ -68,6 +71,9 @@ class TestBounds(unittest.TestCase):
 
             def X(pred):
                 return Bounds.cast({ 't1': 'x1', 't2': 'x2' })(pred)
+            
+            def copy(self):
+                pass
 
         bounds1 = Bounds2D(0, 1, 0.5, 0.7)
         bounds2 = Bounds2D(2, 3, 0.4, 0.6)
