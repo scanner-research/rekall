@@ -1,8 +1,9 @@
 """This module defines the ``Bounds`` class, which all bounds should inherit
 from.
 """
+from abc import ABC, abstractmethod
 
-class Bounds:
+class Bounds(ABC):
     """
     The ``Bounds`` class is a simple wrapper around a dictionary. Typically,
     the keys in this dictionary should represent physical bounds, like ``t1``,
@@ -187,22 +188,22 @@ class Bounds:
         """Converts the bounds to a JSON object."""
         return self.data
 
+    @abstractmethod
     def __lt__(self, other):
         """Method to compare two Bounds. Child classes should implement
         this."""
-        pass
 
+    @abstractmethod
     def __repr__(self):
         """Method to get a string representation of a Bound. Child classes
         should implement this."""
-        pass
 
+    @abstractmethod
     def primary_axis(self):
         """Method to get the primary axis of a Bound for optimizations. Child
         classes should implement this."""
-        pass
 
+    @abstractmethod
     def copy(self):
         """Method to get another Bound that has the same data as this Bound.
         Child classes should implement this."""
-        pass
