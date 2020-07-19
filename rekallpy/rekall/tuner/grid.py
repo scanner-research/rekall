@@ -94,5 +94,4 @@ class GridTuner(Tuner):
 
         configs = GridTuner.generate_configs(self.search_space, self.budget)
 
-        for config in tqdm(configs):
-            self.evaluate_config(config)
+        self.evaluate_configs(configs)

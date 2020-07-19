@@ -2,6 +2,7 @@
 
 from rekall.tuner import Tuner
 from rekall.tuner.random import RandomTuner
+from tqdm import tqdm
 
 class SuccessiveHalvingTuner(Tuner):
     """This tuner does successive halving over the search space."""
@@ -32,7 +33,7 @@ class SuccessiveHalvingTuner(Tuner):
             eta: Halving ratio.
             N: Number of rounds.
             K: Initial number of configurations.
-            T: Number of rounds.
+            T: Number of training iterations to start with.
             tuner: ``Tuner`` class to use for internal training rounds.
             tuner_params: Optional params to pass to the internal tuner.
         """
@@ -65,19 +66,15 @@ class SuccessiveHalvingTuner(Tuner):
             self.log_msg('Round {}, {} configs, {} epochs'.format(cur_round, len(cur_configs), num_epochs))
             
             best_configs_and_scores = []
-            for i, config in enumerate(cur_configs):
-                if self.cost >= self.budget:
-                    self.log_msg('Cost {} surpassed budget {}, ending rounds early.'.format(
-                        self.cost, self.budget
-                    ))
-                    break
+            training_iterations = num_epochs if cur_round > 0 else num_epochs - 1
+            
+            def run_config(config_and_best_score):
+                config = config_and_best_score[0]
+                cur_best_score = config_and_best_score[1] if len(config_and_best_score) > 1 else 0
                 
-                cur_best_config = config
-                if len(config_scores) <= i:
-                    config_scores.append(self.evaluate_config(config))
-                cur_best_score = config_scores[i]
-                
-                training_iterations = num_epochs if cur_round > 0 else num_epochs - 1
+                if cur_best_score is None:
+                    cur_best_score = self.evaluate_configs([config], num_workers = 1,
+                                                           show_loading = False)
                 
                 new_tuner = tuner(
                     self.search_space,
@@ -85,13 +82,33 @@ class SuccessiveHalvingTuner(Tuner):
                     maximize=self.maximize,
                     budget=training_iterations,
                     log=False,
-                    start_config=cur_best_config.copy(),
+                    start_config=config.copy(),
                     start_score=cur_best_score
                 )
                 
-                (cur_best_score, cur_best_config, scores,
-                     execution_times, cost) = new_tuner.tune(**tuner_params)
+                return new_tuner.tune(**tuner_params)
+            
+            configs_to_run = [
+                (config, None if len(config_scores) <= i else config_scores[i])
+                for i, config in enumerate(cur_configs)
+            ]
+            
+            num_workers = self.num_workers
+            if num_workers > 1:
+                config_results = [
+                    res for res in (
+                        tqdm(self.pool.uimap(run_config, configs_to_run),
+                             total=len(configs_to_run)) if self.show_loading
+                        else self.pool.uimap(run_config, configs_to_run))
+                ]
+            else:
+                config_results = [
+                    run_config(config) for config in (
+                        tqdm(configs_to_run) if self.show_loading
+                        else configs_to_run)
+                ]
                 
+            for cur_best_score, cur_best_config, scores, execution_times, cost in config_results:
                 self.scores += scores
                 self.cost += cost
                 self.execution_times += execution_times

@@ -72,7 +72,7 @@ class ScipyLBFGSBTuner(Tuner):
         
         def optimization_function(arr):
             config = array_to_config(arr)
-            score = self.evaluate_config(config)
+            score = self.evaluate_configs([config])
             if self.maximize:
                 score = -1 * score
             return score

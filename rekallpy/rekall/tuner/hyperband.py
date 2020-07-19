@@ -90,9 +90,10 @@ class HyperbandTuner(Tuner):
             )
             successive_halving_tuner = SuccessiveHalvingTuner(
                 self.search_space, self.eval_fn, maximize=self.maximize,
-                budget = bracket_cost, log=False
+                budget = bracket_cost, log=False, num_workers = self.num_workers
             )
             
+            # TODO: use the parallelization from successive halving
             (best_score_bracket, best_config_bracket, scores,
                 execution_times, cost) = successive_halving_tuner.tune(
                 eta = bracket['eta'], N = bracket['N'], K = bracket['K'], T = bracket['T'],

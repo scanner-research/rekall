@@ -48,5 +48,4 @@ class RandomTuner(Tuner):
             seed = seed
         )
 
-        for config in tqdm(configs):
-            self.evaluate_config(config)
+        self.evaluate_configs(configs)

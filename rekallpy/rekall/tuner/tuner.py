@@ -6,6 +6,9 @@ from time import strftime, time
 import os
 import sys
 import pickle
+from pathos.multiprocessing import ProcessingPool as Pool
+from tqdm import tqdm
+import traceback
 
 class Tuner:
     """Base class for all Tuners (see sub-classes for details).
@@ -33,6 +36,9 @@ class Tuner:
         score_log_fn: Your eval function may not return exactly what you
             want to log. This function parses the output of `eval_fn` to
             log.
+        num_workers (int): Number of workers for parallelism. See sub-classes
+            to check whether supported. Default 1.
+        show_loading (bool): Whether to show a loading bar (not always supported).
 
     Example::
 
@@ -62,14 +68,16 @@ class Tuner:
         eval_fn, 
         maximize=True, 
         budget=500,
-        log=True,
+        log=False,
         log_dir=None,
         run_dir=None,
         run_name=None,
         start_config=None,
         start_score=None,
         score_fn=lambda x: x,
-        score_log_fn=lambda x: x
+        score_log_fn=lambda x: x,
+        num_workers = 1,
+        show_loading = True,
     ):
         self.scores = []
         self.execution_times = []
@@ -88,6 +96,10 @@ class Tuner:
         self.start_score = start_score
         self.score_fn = score_fn
         self.score_log_fn = score_log_fn
+        self.num_workers = num_workers
+        if num_workers > 1:
+            self.pool = Pool(num_workers)
+        self.show_loading = True
 
         if self.log:
             # Logging subdirectory
@@ -106,30 +118,56 @@ class Tuner:
             self.report_path = os.path.join(self.log_subdir, 'tuner_report.pkl')
             self.log_path = os.path.join(self.log_subdir, 'log.txt')
 
-    def evaluate_config(self, config):
-        """Evaluate the config."""
-        score = -1000000 if self.maximize else 1000000
+    def evaluate_configs(self, configs, num_workers = None, show_loading = None):
+        """Evaluate the configs."""
+        best_score = -1000000 if self.maximize else 1000000
 
-        try:
+        def eval_single_config(config):
             start = time()
             eval_fn_output = self.eval_fn(config)
             score = self.score_fn(eval_fn_output)
-            self.cost += 1
-            self.scores.append(self.score_log_fn(eval_fn_output))
-            if (self.best_score is None or
-                (self.maximize and score > self.best_score) or
-                (not self.maximize and score < self.best_score)):
-                self.best_score = score
-                self.best_config = config
-                if self.log:
-                    self.log_msg('New best score: {}, current cost: {}'.format(
-                        score, self.cost))
             end = time()
-            self.execution_times.append(end - start)
+            return score, eval_fn_output, end - start, config
+        
+        if num_workers == None:
+            num_workers = self.num_workers
+        if show_loading == None:
+            show_loading = self.show_loading
+        
+        try:
+            if num_workers > 1:
+                config_results = [
+                    res for res in (
+                        tqdm(self.pool.uimap(eval_single_config, configs),
+                             total=len(configs)) if show_loading
+                        else self.pool.uimap(eval_single_config, configs))
+                ]
+            else:
+                config_results = [
+                    eval_single_config(config) for config in (
+                        tqdm(configs) if show_loading
+                        else configs)
+                ]
+            
+            for score, eval_fn_output, execution_time, config in config_results:
+                self.cost += 1
+                self.scores.append(score)
+                if (self.best_score is None or
+                    (self.maximize and score > self.best_score) or
+                    (not self.maximize and score < self.best_score)):
+                    self.best_score = score
+                    best_score = score
+                    self.best_config = config
+                    if self.log:
+                        self.log_msg('New best score: {}, current cost: {}'.format(
+                            score, self.cost))
+                self.execution_times.append(execution_time)
+        except (KeyboardInterrupt, SystemExit):
+            raise
         except:
-            print('Error:', sys.exc_info()[0])
+            traceback.print_exc()
 
-        return score
+        return best_score
 
     def log_msg(self, msg):
         """Log something to the log file."""

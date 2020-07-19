@@ -10,7 +10,7 @@ if __name__ == "__main__":
           license='Apache 2.0',
           packages=['rekall', 'rekall.bounds', 'rekall.stdlib', 'rekall.tuner'],
           install_requires=['python-constraint', 'tqdm', 'cloudpickle',
-                            'urllib3', 'requests'],
+                            'urllib3', 'requests', 'pathos'],
           setup_requires=['pytest-runner'],
           tests_require=['pytest'],
           zip_safe=False)

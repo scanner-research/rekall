@@ -37,7 +37,7 @@ class CoordinateDescentTuner(Tuner):
         config[cur_param] = cur_val
         
         local_cost = 0
-        score = self.evaluate_config(config)
+        score = self.evaluate_configs([config], show_loading = False)
         local_cost += 1
 
         # If the score is worse, try other direction
@@ -47,7 +47,7 @@ class CoordinateDescentTuner(Tuner):
             cur_val = orig_val + delta
             config[cur_param] = cur_val
             
-            score = self.evaluate_config(config)
+            score = self.evaluate_configs([config], show_loading = False)
             local_cost += 1
 
             # Neither direction works
@@ -63,7 +63,7 @@ class CoordinateDescentTuner(Tuner):
             cur_val += delta
             config[cur_param] = cur_val
             
-            score = self.evaluate_config(config)
+            score = self.evaluate_configs([config], show_loading = False)
             local_cost += 1
             
             # If this score is worse
@@ -152,7 +152,7 @@ class CoordinateDescentTuner(Tuner):
             self.best_score = score
             self.log_msg('Starting score: {}'.format(score))
         else:
-            score = self.evaluate_config(config)
+            score = self.evaluate_configs([config], show_loading = False)
 
         def config_to_point(config):
             coords = sorted(coordinates)
@@ -177,7 +177,7 @@ class CoordinateDescentTuner(Tuner):
             if randomize_param_order:
                 random.shuffle(coordinates)
             for coordinate in coordinates:
-                if self.cost > self.budget:
+                if self.cost >= self.budget:
                     break
                 self.log_msg('Coordinate {}, current cost {}'.format(coordinate, self.cost))
                 orig_val = config[coordinate]
@@ -192,7 +192,7 @@ class CoordinateDescentTuner(Tuner):
                             continue
                         config[coordinate] = choice
 
-                        score = self.evaluate_config(config)
+                        score = self.evaluate_configs([config], show_loading = False)
                         
                         if ((self.maximize and score > max_score) or
                             (not self.maximize and score < max_score)):
@@ -213,6 +213,8 @@ class CoordinateDescentTuner(Tuner):
                             config, coordinate, alpha, line_search_budget,
                             cur_score = cur_score)
 
+                        print(self.cost)
+                        
                         self.log_msg('Old: {}, New: {}'.format(orig_val, best_choice))
                         if best_choice != orig_val:
                             changed = True
