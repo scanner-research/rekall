@@ -2,7 +2,7 @@
 
 from rekall.tuner import Tuner
 from rekall.tuner.random import RandomTuner
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 class SuccessiveHalvingTuner(Tuner):
     """This tuner does successive halving over the search space."""

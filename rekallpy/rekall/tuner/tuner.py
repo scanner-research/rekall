@@ -7,7 +7,7 @@ import os
 import sys
 import pickle
 from pathos.multiprocessing import ProcessingPool as Pool
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import traceback
 
 class Tuner:

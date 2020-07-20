@@ -1,7 +1,7 @@
 """This module defines a tuner that performs a grid search over the state space."""
 
 from rekall.tuner import Tuner
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from itertools import product, combinations
 import numpy as np
 
