@@ -241,7 +241,7 @@ class IntervalSet:
                     if self_start - window <= other_end:
                         if new_start_index is None:
                             new_start_index = idx + start_index
-                        if other_start - window > other_end:
+                        if other_start - window > self_end:
                             break
                         intervals_in_other.append(intrvlother)
                 if new_start_index is None:
